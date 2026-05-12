@@ -1,0 +1,2 @@
+Replace this directory with icon-192.png and icon-512.png before shipping.
+PNGs must be square ClearClaim-branded icons (maskable safe-area).
