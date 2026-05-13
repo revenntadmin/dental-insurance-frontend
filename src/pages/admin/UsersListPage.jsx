@@ -47,7 +47,7 @@ export function UsersListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(data?.items || []).map((u) => (
+              {(data || []).map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>
                     <Link to={`/admin/users/${u.id}`} className="text-primary hover:underline">
