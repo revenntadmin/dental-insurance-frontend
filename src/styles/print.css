@@ -1,4 +1,5 @@
 @media print {
+
   .no-print,
   nav,
   aside,
@@ -7,27 +8,33 @@
   button {
     display: none !important;
   }
+
   body {
     background: white !important;
     color: black !important;
   }
+
   .print-only {
     display: block !important;
   }
+
   .print-letter {
     padding: 1in;
     font-family: 'Georgia', serif;
     font-size: 11pt;
     line-height: 1.5;
   }
+
   .print-poster {
     text-align: center;
     padding: 2rem;
   }
+
   .print-poster .qr {
     margin: 0 auto;
   }
 }
+
 .print-only {
   display: none;
 }
