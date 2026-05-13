@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 export function PracticesListPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'practices'],
-    queryFn: () => api.get('/api/admin/practices').then((r) => r.data),
+    queryFn: () => api.get('/api/admin/practices').then((r) => { return r.data }),
   });
 
   return (
