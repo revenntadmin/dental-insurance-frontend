@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 export function PracticesListPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'practices'],
-    queryFn: () => api.get('/api/admin/practices').then((r) => r.data),
+    queryFn: () => api.get('/api/admin/practices').then((r) => { return r.data }),
   });
 
   return (
@@ -30,7 +30,7 @@ export function PracticesListPage() {
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <LoadingSpinner />
-        ) : (data?.items?.length ?? 0) === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <EmptyState title="No practices yet" />
         ) : (
           <Table>
@@ -45,7 +45,7 @@ export function PracticesListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((p) => (
+              {data.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
                     <Link to={`/admin/practices/${p.id}`} className="font-medium text-primary hover:underline">

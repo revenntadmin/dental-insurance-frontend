@@ -48,7 +48,7 @@ export function AuditLogsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(data?.items || []).map((l) => (
+              {(data || []).map((l) => (
                 <TableRow key={l.id}>
                   <TableCell>{format_datetime(l.created_at)}</TableCell>
                   <TableCell>{l.actor_email || 'system'}</TableCell>
