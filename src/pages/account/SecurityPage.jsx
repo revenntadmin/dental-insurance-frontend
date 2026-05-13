@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function SecurityPage() {
   const toast = useToast();
@@ -17,6 +18,7 @@ export function SecurityPage() {
   const { profile } = useAuth();
   const [current, set_current] = useState('');
   const [next, set_next] = useState('');
+  const [confirm_open, set_confirm_open] = useState(false);
 
   const change = useMutation({
     mutationFn: () => change_password(current, next),
@@ -33,7 +35,7 @@ export function SecurityPage() {
     onSuccess: async () => {
       toast.success('MFA reset — please sign in again');
       await logout();
-      navigate('/auth/login');
+      navigate('/auth/login?reason=mfa_required');
     },
     onError: (e) => toast.error(api_error_message(e)),
   });
@@ -71,15 +73,29 @@ export function SecurityPage() {
                 ? `Enrolled — ends in ${profile.mfa_phone_last_4 || '????'}`
                 : 'Not enrolled'}
             </p>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (window.confirm('Reset MFA? You will be signed out and must re-enroll.')) reset_mfa.mutate();
-              }}
-              disabled={reset_mfa.isPending}
-            >
+            <Button variant="destructive" onClick={() => set_confirm_open(true)} disabled={reset_mfa.isPending}>
               Reset MFA
             </Button>
+            <Dialog open={confirm_open} onOpenChange={set_confirm_open}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reset MFA?</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  This will remove your phone factor. You will be required to enroll a new phone number on your next login. Continue?
+                </p>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => set_confirm_open(false)}>Cancel</Button>
+                  <Button
+                    variant="destructive"
+                    disabled={reset_mfa.isPending}
+                    onClick={() => { set_confirm_open(false); reset_mfa.mutate(); }}
+                  >
+                    {reset_mfa.isPending ? 'Resetting…' : 'Reset'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>

@@ -6,31 +6,26 @@ export function useCsvImport(pid) {
     mutationFn: async (file) => {
       const fd = new FormData();
       fd.append('file', file);
-      const { data } = await api.post(`/api/practice/${pid}/patients/import/upload`, fd, {
+      const { data } = await api.post(`/api/practice/${pid}/imports/csv/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       return data;
     },
   });
 
-  const suggest = useMutation({
-    mutationFn: ({ upload_id }) =>
-      api.post(`/api/practice/${pid}/patients/import/${upload_id}/suggest_mapping`).then((r) => r.data),
-  });
-
   const validate = useMutation({
-    mutationFn: ({ upload_id, column_map }) =>
+    mutationFn: ({ upload_id, column_mapping }) =>
       api
-        .post(`/api/practice/${pid}/patients/import/${upload_id}/validate`, { column_map })
+        .post(`/api/practice/${pid}/imports/csv/${upload_id}/validate`, { column_mapping })
         .then((r) => r.data),
   });
 
   const confirm = useMutation({
     mutationFn: ({ upload_id, skipped_rows }) =>
       api
-        .post(`/api/practice/${pid}/patients/import/${upload_id}/confirm`, { skipped_rows })
+        .post(`/api/practice/${pid}/imports/csv/${upload_id}/confirm`, { skipped_rows })
         .then((r) => r.data),
   });
 
-  return { upload, suggest, validate, confirm };
+  return { upload, validate, confirm };
 }

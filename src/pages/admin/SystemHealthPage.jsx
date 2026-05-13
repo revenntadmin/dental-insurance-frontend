@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 export function SystemHealthPage() {
   const queues = useQuery({ queryKey: ['admin', 'health', 'queues'], queryFn: () => api.get('/api/admin/health/queues').then((r) => r.data) });
   const db = useQuery({ queryKey: ['admin', 'health', 'db'], queryFn: () => api.get('/api/admin/health/db').then((r) => r.data) });
+  const clearinghouse = useQuery({ queryKey: ['admin', 'health', 'clearinghouse'], queryFn: () => api.get('/api/admin/health/clearinghouse').then((r) => r.data) });
   const failed = useQuery({
     queryKey: ['admin', 'health', 'failed_tx'],
     queryFn: () => api.get('/api/admin/health/failed_transactions').then((r) => r.data),
@@ -18,7 +19,7 @@ export function SystemHealthPage() {
   return (
     <div>
       <PageHeader title="System health" />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Queue depth</CardTitle>
@@ -44,6 +45,23 @@ export function SystemHealthPage() {
             {db.isLoading ? <LoadingSpinner /> : (
               <ul className="space-y-1 text-sm">
                 {Object.entries(db.data || {}).map(([k, v]) => (
+                  <li key={k} className="flex justify-between">
+                    <span className="text-muted-foreground">{k}</span>
+                    <span>{String(v)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Clearinghouse</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {clearinghouse.isLoading ? <LoadingSpinner /> : (
+              <ul className="space-y-1 text-sm">
+                {Object.entries(clearinghouse.data || {}).map(([k, v]) => (
                   <li key={k} className="flex justify-between">
                     <span className="text-muted-foreground">{k}</span>
                     <span>{String(v)}</span>

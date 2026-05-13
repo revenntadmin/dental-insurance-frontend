@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ProcedureRow } from '@/components/ProcedureRow';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 
@@ -20,6 +21,7 @@ export function ClaimEditPage() {
   const toast = useToast();
   const { data, isLoading } = useClaim(pid, claim_id);
   const [form, set_form] = useState(null);
+  const [delete_open, set_delete_open] = useState(false);
 
   useEffect(() => {
     if (data) set_form(data);
@@ -31,6 +33,12 @@ export function ClaimEditPage() {
       toast.success('Claim updated');
       navigate(`/p/${pid}/claims/${claim_id}`);
     },
+    onError: (e) => toast.error(api_error_message(e)),
+  });
+
+  const delete_claim = useMutation({
+    mutationFn: () => api.delete(`/api/practice/${pid}/claims/${claim_id}`).then((r) => r.data),
+    onSuccess: () => navigate(`/p/${pid}/claims`),
     onError: (e) => toast.error(api_error_message(e)),
   });
 
@@ -80,14 +88,40 @@ export function ClaimEditPage() {
           Add procedure
         </Button>
       </div>
-      <div className="mt-6 flex justify-end gap-2">
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          Cancel
+      <div className="mt-6 flex justify-between">
+        <Button variant="destructive" onClick={() => set_delete_open(true)}>
+          Delete claim
         </Button>
-        <Button onClick={() => save.mutate()} disabled={save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            Cancel
+          </Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? 'Saving…' : 'Save'}
+          </Button>
+        </div>
       </div>
+
+      <Dialog open={delete_open} onOpenChange={set_delete_open}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete claim?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This draft will be permanently deleted and cannot be recovered.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => set_delete_open(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              disabled={delete_claim.isPending}
+              onClick={() => delete_claim.mutate()}
+            >
+              {delete_claim.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

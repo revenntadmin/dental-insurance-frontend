@@ -11,8 +11,8 @@ export function PatientImportsListPage() {
   const pid = useTenancyParam();
   const { data, isLoading } = useQuery({
     enabled: !!pid,
-    queryKey: ['practice', pid, 'patient_imports'],
-    queryFn: () => api.get(`/api/practice/${pid}/patients/imports`).then((r) => r.data),
+    queryKey: ['practice', pid, 'imports'],
+    queryFn: () => api.get(`/api/practice/${pid}/imports`).then((r) => r.data),
   });
 
   return (

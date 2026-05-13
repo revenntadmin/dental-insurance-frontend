@@ -54,14 +54,12 @@ export function PatientImportPage() {
     set_limit_error(null);
     try {
       const data = await csv.upload.mutateAsync(f);
-      set_draft({ ...draft, upload_id: data.upload_id, raw_headers: data.raw_headers, row_count: data.row_count, column_map: {} });
-      const sugg = await csv.suggest.mutateAsync({ upload_id: data.upload_id }).catch(() => ({}));
       set_draft({
         ...draft,
         upload_id: data.upload_id,
         raw_headers: data.raw_headers,
         row_count: data.row_count,
-        column_map: sugg?.column_map || {},
+        column_map: data.suggested_mapping || {},
       });
       set_step(2);
     } catch (err) {
@@ -79,7 +77,7 @@ export function PatientImportPage() {
     try {
       const result = await csv.validate.mutateAsync({
         upload_id: draft.upload_id,
-        column_map: draft.column_map,
+        column_mapping: draft.column_map,
       });
       set_draft({ ...draft, validation: result, skipped: [] });
       set_step(3);

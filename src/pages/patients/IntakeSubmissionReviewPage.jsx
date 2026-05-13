@@ -32,7 +32,7 @@ export function IntakeSubmissionReviewPage() {
   }, [data]);
 
   const confirm = useMutation({
-    mutationFn: () => api.put(`/api/practice/${pid}/intake_submissions/${id}/confirm`, { fields: form }).then((r) => r.data),
+    mutationFn: () => api.put(`/api/practice/${pid}/intake_submissions/${id}/confirm`, form).then((r) => r.data),
     onSuccess: () => {
       toast.success('Patient created from submission');
       navigate(`/p/${pid}/intake-submissions`);

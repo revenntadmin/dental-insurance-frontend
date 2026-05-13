@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { complete_phone_enrollment } from '@/lib/auth';
+import { auth, complete_phone_enrollment } from '@/lib/auth';
 import { api } from '@/lib/api_client';
 import { useMfa } from '@/features/auth/MfaContext';
 import { useAuth } from '@/features/auth/useAuth';
@@ -27,7 +27,8 @@ export function EnrollVerifyPage() {
     set_error(null);
     try {
       await complete_phone_enrollment(flow.verification_id, otp);
-      await api.post('/api/me/mfa/confirm-enrollment');
+      const phone_last_4 = auth.currentUser.multiFactor.enrolledFactors[0].phoneNumber.slice(-4);
+      await api.post('/api/me/mfa/confirm-enrollment', { phone_last_4 });
       await refresh_profile();
       const { data: me } = await api.get('/api/me');
       clear();

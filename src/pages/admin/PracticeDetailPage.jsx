@@ -63,8 +63,37 @@ export function PracticeDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'practices', pid] }),
   });
 
+  const [editing, set_editing] = useState(false);
+  const [edit_form, set_edit_form] = useState({});
+
+  const save_practice = useMutation({
+    mutationFn: (values) => api.put(`/api/admin/practices/${pid}`, values).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'practices', pid] });
+      set_editing(false);
+      toast.success('Practice saved');
+    },
+    onError: (e) => toast.error(api_error_message(e)),
+  });
+
   if (practice.isLoading || !practice.data) return <LoadingSpinner />;
   const data = practice.data;
+
+  function start_edit() {
+    set_edit_form({
+      name: data.name || '',
+      npi: data.npi || '',
+      address_line_1: data.address_line_1 || '',
+      address_line_2: data.address_line_2 || '',
+      city: data.city || '',
+      state: data.state || '',
+      zip: data.postal_code || '',
+      phone: data.phone || '',
+      email: data.email || '',
+      timezone: data.timezone || '',
+    });
+    set_editing(true);
+  }
 
   return (
     <div>
@@ -93,13 +122,55 @@ export function PracticeDetailPage() {
 
         <TabsContent value="overview">
           <Card>
-            <CardContent className="grid grid-cols-2 gap-4 p-6 text-sm">
-              <Field label="Tax ID" value={data.tax_id} />
-              <Field label="NPI" value={data.npi} />
-              <Field label="Email" value={data.email} />
-              <Field label="Phone" value={data.phone} />
-              <Field label="Address" value={`${data.address_line_1}, ${data.city}, ${data.state} ${data.postal_code}`} />
-            </CardContent>
+            <CardHeader className="flex-row items-center justify-between">
+              <CardTitle className="text-base">Practice info</CardTitle>
+              {!editing && (
+                <Button size="sm" variant="outline" onClick={start_edit}>
+                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                </Button>
+              )}
+            </CardHeader>
+            {editing ? (
+              <CardContent className="space-y-3 p-6">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['name', 'Name'],
+                    ['npi', 'NPI'],
+                    ['address_line_1', 'Address line 1'],
+                    ['address_line_2', 'Address line 2'],
+                    ['city', 'City'],
+                    ['state', 'State'],
+                    ['zip', 'Zip'],
+                    ['phone', 'Phone'],
+                    ['email', 'Email'],
+                    ['timezone', 'Timezone'],
+                  ].map(([key, label]) => (
+                    <div key={key} className="space-y-1">
+                      <Label htmlFor={key}>{label}</Label>
+                      <Input
+                        id={key}
+                        value={edit_form[key] ?? ''}
+                        onChange={(e) => set_edit_form((p) => ({ ...p, [key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => set_editing(false)}>Cancel</Button>
+                  <Button onClick={() => save_practice.mutate(edit_form)} disabled={save_practice.isPending}>
+                    {save_practice.isPending ? 'Saving…' : 'Save'}
+                  </Button>
+                </div>
+              </CardContent>
+            ) : (
+              <CardContent className="grid grid-cols-2 gap-4 p-6 text-sm">
+                <Field label="Tax ID" value={data.tax_id} />
+                <Field label="NPI" value={data.npi} />
+                <Field label="Email" value={data.email} />
+                <Field label="Phone" value={data.phone} />
+                <Field label="Address" value={`${data.address_line_1}, ${data.city}, ${data.state} ${data.postal_code}`} />
+              </CardContent>
+            )}
           </Card>
         </TabsContent>
 

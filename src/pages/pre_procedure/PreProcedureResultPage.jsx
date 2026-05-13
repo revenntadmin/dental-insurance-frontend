@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueries } from '@tanstack/react-query';
 import { RefreshCw, ArrowRight } from 'lucide-react';
 import { useTenancyParam } from '@/hooks/useTenancyParam';
 import { usePreProcedure } from '@/features/pre_procedure/usePreProcedure';
@@ -21,6 +22,51 @@ export function PreProcedureResultPage() {
     mutationFn: () => api.post(`/api/practice/${pid}/pre_procedures/${id}/rerun`).then((r) => r.data),
     onSuccess: (next) => navigate(`/p/${pid}/pre-procedure/${next.id || id}`),
   });
+
+  const unique_cdt_codes = useMemo(() => {
+    if (!data) return [];
+    const codes = (data.procedures || []).map((p) => p.cdt_code).filter(Boolean);
+    return [...new Set(codes)];
+  }, [data]);
+
+  const payer_id = data?.insurance_plan?.payer_id;
+
+  const cdt_req_queries = useQueries({
+    queries: unique_cdt_codes.map((code) => ({
+      enabled: !!pid && !!code,
+      queryKey: ['practice', pid, 'cdt_doc_requirements', code],
+      queryFn: () => api.get(`/api/practice/${pid}/cdt_doc_requirements/${code}`).then((r) => r.data),
+    })),
+  });
+
+  const payer_req_queries = useQueries({
+    queries: payer_id
+      ? unique_cdt_codes.map((code) => ({
+          enabled: !!pid && !!payer_id && !!code,
+          queryKey: ['practice', pid, 'payer_doc_requirements', payer_id, code],
+          queryFn: () =>
+            api.get(`/api/practice/${pid}/payer_doc_requirements/${payer_id}/${code}`).then((r) => r.data),
+        }))
+      : [],
+  });
+
+  const merged_docs = useMemo(() => {
+    const standard_rows = cdt_req_queries.flatMap((q) => q.data?.items || []);
+    const payer_rows = payer_req_queries.flatMap((q) => q.data?.items || []);
+    const map = new Map();
+    for (const row of standard_rows) map.set(row.doc_type, { ...row, source: 'standard' });
+    for (const row of payer_rows) {
+      if (row.is_additional) {
+        map.set(`${row.doc_type}_payer`, { ...row, source: 'payer' });
+      } else {
+        map.set(row.doc_type, { ...row, source: 'payer' });
+      }
+    }
+    return [...map.values()];
+  }, [cdt_req_queries, payer_req_queries]);
+
+  const docs_loading =
+    cdt_req_queries.some((q) => q.isLoading) || payer_req_queries.some((q) => q.isLoading);
 
   if (isLoading || !data) return <LoadingSpinner />;
   const c = data.coverage || {};
@@ -68,18 +114,20 @@ export function PreProcedureResultPage() {
             <CardTitle className="text-base">Required Documentation</CardTitle>
           </CardHeader>
           <CardContent>
-            {(data.required_docs?.length ?? 0) === 0 ? (
+            {docs_loading ? (
+              <LoadingSpinner />
+            ) : merged_docs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No documentation required.</p>
             ) : (
               <ul className="space-y-2 text-sm">
-                {data.required_docs.map((d, i) => (
+                {merged_docs.map((d, i) => (
                   <li key={i} className="flex items-start gap-2">
                     <input type="checkbox" className="mt-1" />
                     <div>
-                      <p className="font-medium">{d.label}</p>
+                      <p className="font-medium">{d.label || d.doc_type}</p>
                       <p className="text-xs text-muted-foreground">
                         {d.required ? '(Required' : '(Optional'} —{' '}
-                        {d.source === 'standard' ? 'standard' : `${data.payer_name}`})
+                        {d.source === 'standard' ? 'standard' : data.payer_name})
                       </p>
                     </div>
                   </li>
