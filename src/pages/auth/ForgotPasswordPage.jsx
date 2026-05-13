@@ -1,55 +1,66 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { sendPasswordReset } from '../../lib/auth.js';
-import Button from '../../components/ui/Button.jsx';
-import Input from '../../components/ui/Input.jsx';
-import { useToast } from '../../hooks/use_toast.jsx';
+import { send_password_reset_email } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const { toast } = useToast();
+export function ForgotPasswordPage() {
+  const [email, set_email] = useState('');
+  const [sent, set_sent] = useState(false);
+  const [submitting, set_submitting] = useState(false);
 
-  async function onSubmit(e) {
+  async function on_submit(e) {
     e.preventDefault();
-    setBusy(true);
+    set_submitting(true);
     try {
-      await sendPasswordReset(email.trim());
-      setSent(true);
-    } catch (err) {
-      toast(err.message || 'Failed to send reset email', 'error');
+      await send_password_reset_email(email);
+    } catch {
+      // ignore — same UX
     } finally {
-      setBusy(false);
+      set_submitting(false);
+      set_sent(true);
     }
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="card w-full max-w-md p-8">
-        <h1 className="text-xl font-semibold mb-4">Reset password</h1>
-        {sent ? (
-          <p className="text-sm text-slate-600">
-            If an account exists for <span className="font-medium">{email}</span>, a password
-            reset link has been sent.
-          </p>
-        ) : (
-          <form onSubmit={onSubmit} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <Button type="submit" disabled={busy || !email} className="w-full">
-              {busy ? 'Sending…' : 'Send reset link'}
-            </Button>
-          </form>
-        )}
-        <div className="text-center mt-4">
-          <Link to="/login" className="text-sm text-brand-600 hover:underline">Back to sign in</Link>
-        </div>
+  if (sent) {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">Check your email</h1>
+        <p className="text-sm text-muted-foreground">
+          If an account exists for {email}, a password-reset email is on its way.
+        </p>
+        <Link to="/auth/login" className="text-sm text-primary hover:underline">
+          ← Back to sign in
+        </Link>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-xl font-semibold">Forgot password</h1>
+        <p className="text-sm text-muted-foreground">We&apos;ll email you a reset link.</p>
+      </div>
+      <form onSubmit={on_submit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => set_email(e.target.value)}
+          />
+        </div>
+        <Button type="submit" className="w-full" disabled={submitting || !email}>
+          {submitting ? 'Sending…' : 'Send reset link'}
+        </Button>
+      </form>
+      <Link to="/auth/login" className="text-sm text-primary hover:underline">
+        ← Back to sign in
+      </Link>
     </div>
   );
 }

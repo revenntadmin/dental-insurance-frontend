@@ -1,56 +1,75 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import Input from '../../components/ui/Input.jsx';
-import LoadingState, { ErrorState } from '../../components/shared/LoadingState.jsx';
-import EmptyState from '../../components/shared/EmptyState.jsx';
-import { apiClient } from '../../lib/api_client.js';
+import { api } from '@/lib/api_client';
+import { format_datetime } from '@/lib/formatters';
+import { PageHeader } from '@/components/PageHeader';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-export default function AuditLogsPage() {
-  const [filters, setFilters] = useState({ actor_email: '', action: '', resource_type: '' });
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['admin_audit_logs', filters],
-    queryFn: async () => (await apiClient.get('/api/admin/audit_logs', { params: filters })).data,
+export function AuditLogsPage() {
+  const [filters, set_filters] = useState({ from: '', to: '', practice_id: '', user_id: '', action: '' });
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'audit_logs', filters],
+    queryFn: () =>
+      api
+        .get('/api/admin/audit_logs', {
+          params: Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
+        })
+        .then((r) => r.data),
   });
 
   return (
     <div>
-      <PageHeader title="Audit logs" subtitle="Every PHI access and configuration change" />
-
-      <div className="card p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Input label="Actor email" value={filters.actor_email} onChange={(e) => setFilters({ ...filters, actor_email: e.target.value })} />
-        <Input label="Action" value={filters.action} onChange={(e) => setFilters({ ...filters, action: e.target.value })} placeholder="e.g. patient.view" />
-        <Input label="Resource type" value={filters.resource_type} onChange={(e) => setFilters({ ...filters, resource_type: e.target.value })} placeholder="patient, claim, …" />
+      <PageHeader title="Audit logs" description="Action, resource, timestamp — no PHI." />
+      <Card className="mb-4">
+        <CardContent className="grid grid-cols-2 gap-3 p-4 md:grid-cols-5">
+          <FilterField label="From" id="from" type="date" value={filters.from} on_change={(v) => set_filters((f) => ({ ...f, from: v }))} />
+          <FilterField label="To" id="to" type="date" value={filters.to} on_change={(v) => set_filters((f) => ({ ...f, to: v }))} />
+          <FilterField label="Practice ID" id="practice_id" value={filters.practice_id} on_change={(v) => set_filters((f) => ({ ...f, practice_id: v }))} />
+          <FilterField label="User ID" id="user_id" value={filters.user_id} on_change={(v) => set_filters((f) => ({ ...f, user_id: v }))} />
+          <FilterField label="Action" id="action" value={filters.action} on_change={(v) => set_filters((f) => ({ ...f, action: v }))} />
+        </CardContent>
+      </Card>
+      <div className="rounded-lg border bg-card">
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>When</TableHead>
+                <TableHead>Actor</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Resource</TableHead>
+                <TableHead>Resource ID</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data?.items || []).map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell>{format_datetime(l.created_at)}</TableCell>
+                  <TableCell>{l.actor_email || 'system'}</TableCell>
+                  <TableCell className="font-mono text-xs">{l.action}</TableCell>
+                  <TableCell>{l.resource_type}</TableCell>
+                  <TableCell className="font-mono text-xs">{l.resource_id}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
+    </div>
+  );
+}
 
-      <div className="card">
-        {isLoading ? <LoadingState /> : error ? <ErrorState error={error} /> :
-          !data?.items?.length ? <EmptyState title="No audit entries match these filters" /> : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500 bg-slate-50">
-                <tr>
-                  <th className="px-5 py-2">Timestamp</th>
-                  <th className="px-5 py-2">Actor</th>
-                  <th className="px-5 py-2">Action</th>
-                  <th className="px-5 py-2">Resource</th>
-                  <th className="px-5 py-2">IP</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((e) => (
-                  <tr key={e.audit_log_id} className="table-row">
-                    <td className="px-5 py-2">{new Date(e.created_at).toLocaleString()}</td>
-                    <td className="px-5 py-2">{e.actor_email}</td>
-                    <td className="px-5 py-2">{e.action}</td>
-                    <td className="px-5 py-2">{e.resource_type}:{e.resource_id}</td>
-                    <td className="px-5 py-2 text-xs text-slate-500">{e.ip_address}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )
-        }
-      </div>
+function FilterField({ label, id, type = 'text', value, on_change }) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type={type} value={value} onChange={(e) => on_change(e.target.value)} />
     </div>
   );
 }

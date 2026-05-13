@@ -1,95 +1,200 @@
 import { Link, useParams } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import Button from '../../components/ui/Button.jsx';
-import StatusBadge from '../../components/shared/StatusBadge.jsx';
-import LoadingState, { ErrorState } from '../../components/shared/LoadingState.jsx';
-import { usePatient } from '../../features/patients/queries.js';
+import { useQuery } from '@tanstack/react-query';
+import { Pencil } from 'lucide-react';
+import { useTenancyParam } from '@/hooks/useTenancyParam';
+import { usePatient } from '@/features/patients/usePatient';
+import { api } from '@/lib/api_client';
+import { format_date } from '@/lib/formatters';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { StatusBadge } from '@/components/StatusBadge';
+import { PageHeader } from '@/components/PageHeader';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { EmptyState } from '@/components/EmptyState';
 
-export default function PatientDetailPage() {
+export function PatientDetailPage() {
+  const pid = useTenancyParam();
   const { patient_id } = useParams();
-  const { data, isLoading, error } = usePatient(patient_id);
+  const { data: patient, isLoading } = usePatient(pid, patient_id);
 
-  if (isLoading) return <LoadingState />;
-  if (error) return <ErrorState error={error} />;
-  if (!data) return null;
+  const claims = useQuery({
+    enabled: !!pid && !!patient_id,
+    queryKey: ['practice', pid, 'claims', { patient_id }],
+    queryFn: () => api.get(`/api/practice/${pid}/claims`, { params: { patient_id } }).then((r) => r.data),
+  });
+
+  const pre_procs = useQuery({
+    enabled: !!pid && !!patient_id,
+    queryKey: ['practice', pid, 'patients', patient_id, 'pre_procedures'],
+    queryFn: () =>
+      api.get(`/api/practice/${pid}/patients/${patient_id}/pre_procedures`).then((r) => r.data),
+  });
+
+  const documents = useQuery({
+    enabled: !!pid && !!patient_id,
+    queryKey: ['practice', pid, 'documents', { patient_id }],
+    queryFn: () => api.get(`/api/practice/${pid}/documents`, { params: { patient_id } }).then((r) => r.data),
+  });
+
+  if (isLoading) return <LoadingSpinner />;
+  if (!patient) return <EmptyState title="Patient not found" />;
 
   return (
     <div>
       <PageHeader
-        title={`${data.last_name}, ${data.first_name}`}
-        subtitle={`DOB ${data.date_of_birth} · ${data.email || ''}`}
+        title={`${patient.first_name} ${patient.last_name}`}
+        description={`DOB ${format_date(patient.date_of_birth)} · Chart ${patient.chart_number || '—'}`}
         actions={
-          <>
-            <Link to={`/patients/${patient_id}/insurance`}><Button variant="secondary">Edit insurance</Button></Link>
-            <Link to={`/claims/new?patient_id=${patient_id}`}><Button>New claim</Button></Link>
-          </>
+          <Link to={`/p/${pid}/patients/${patient_id}/edit`}>
+            <Button variant="outline">
+              <Pencil className="mr-2 h-4 w-4" /> Edit
+            </Button>
+          </Link>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="card p-5 lg:col-span-1">
-          <h3 className="font-semibold mb-3">Demographics</h3>
-          <dl className="text-sm space-y-1.5">
-            <div className="flex justify-between"><dt className="text-slate-500">Phone</dt><dd>{data.phone || '—'}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-500">Email</dt><dd>{data.email || '—'}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-500">Address</dt><dd className="text-right">{data.address_line1 || '—'}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-500">Gender</dt><dd>{data.gender || '—'}</dd></div>
-          </dl>
-        </div>
+      <Tabs defaultValue="profile">
+        <TabsList>
+          <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="insurances">Insurances</TabsTrigger>
+          <TabsTrigger value="claims">Claims</TabsTrigger>
+          <TabsTrigger value="pre">Pre-Procedures</TabsTrigger>
+          <TabsTrigger value="docs">Documents</TabsTrigger>
+        </TabsList>
 
-        <div className="card p-5 lg:col-span-2">
-          <h3 className="font-semibold mb-3">Insurance</h3>
-          {!data.insurance_policies?.length ? (
-            <p className="text-sm text-slate-500">No insurance on file.</p>
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Demographics</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+              <Field label="First name" value={patient.first_name} />
+              <Field label="Last name" value={patient.last_name} />
+              <Field label="Date of birth" value={format_date(patient.date_of_birth)} />
+              <Field label="Sex" value={patient.sex} />
+              <Field label="Phone" value={patient.phone} />
+              <Field label="Email" value={patient.email} />
+              <Field label="Address" value={patient.address_line_1} />
+              <Field label="City / State / Zip" value={`${patient.city || ''} ${patient.state || ''} ${patient.postal_code || ''}`} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="insurances">
+          {(patient.insurances?.length ?? 0) === 0 ? (
+            <EmptyState title="No insurances on file" />
           ) : (
-            <ul className="space-y-3">
-              {data.insurance_policies.map((pol) => (
-                <li key={pol.policy_id} className="border border-slate-200 rounded p-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <div className="font-medium">{pol.carrier_name} · {pol.plan_name}</div>
-                    <StatusBadge status={pol.eligibility_status} />
-                  </div>
-                  <div className="text-slate-500 mt-1">
-                    Member {pol.member_id} · Group {pol.group_number || '—'} · {pol.relationship_to_subscriber || 'self'}
-                  </div>
+            <div className="space-y-3">
+              {patient.insurances.map((ins) => (
+                <Card key={ins.id}>
+                  <CardContent className="grid grid-cols-2 gap-4 p-4 text-sm">
+                    <Field label="Payer" value={ins.payer_name} />
+                    <Field label="Member ID" value={ins.member_id} />
+                    <Field label="Plan / Group" value={ins.group_number} />
+                    <Field label="Subscriber" value={ins.subscriber_name} />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="claims">
+          {claims.isLoading ? (
+            <LoadingSpinner />
+          ) : (claims.data?.items?.length ?? 0) === 0 ? (
+            <EmptyState title="No claims yet" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service date</TableHead>
+                  <TableHead>CDT codes</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {claims.data.items.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell>
+                      <Link to={`/p/${pid}/claims/${c.id}`} className="text-primary hover:underline">
+                        {format_date(c.service_date)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{(c.cdt_codes || []).join(', ')}</TableCell>
+                    <TableCell>
+                      <StatusBadge status={c.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+
+        <TabsContent value="pre">
+          {pre_procs.isLoading ? (
+            <LoadingSpinner />
+          ) : (pre_procs.data?.items?.length ?? 0) === 0 ? (
+            <EmptyState title="No pre-procedure checks" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service date</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pre_procs.data.items.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>
+                      <Link to={`/p/${pid}/pre-procedure/${p.id}`} className="text-primary hover:underline">
+                        {format_date(p.service_date)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={p.status} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+
+        <TabsContent value="docs">
+          {documents.isLoading ? (
+            <LoadingSpinner />
+          ) : (documents.data?.items?.length ?? 0) === 0 ? (
+            <EmptyState title="No documents" />
+          ) : (
+            <ul className="divide-y rounded-md border bg-card">
+              {documents.data.items.map((d) => (
+                <li key={d.id} className="flex items-center justify-between px-4 py-2 text-sm">
+                  <span>
+                    {d.document_type} · {format_date(d.created_at)}
+                  </span>
+                  <a href={d.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    Open
+                  </a>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
-        <div className="card p-5 lg:col-span-3">
-          <h3 className="font-semibold mb-3">Recent claims</h3>
-          {!data.recent_claims?.length ? (
-            <p className="text-sm text-slate-500">No claims yet.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="py-2">Service date</th>
-                  <th className="py-2">CDT codes</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Amount</th>
-                  <th className="py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.recent_claims.map((c) => (
-                  <tr key={c.claim_id} className="border-t border-slate-100">
-                    <td className="py-2">{c.service_date}</td>
-                    <td className="py-2">{c.cdt_codes?.join(', ')}</td>
-                    <td className="py-2"><StatusBadge status={c.status} /></td>
-                    <td className="py-2">${((c.billed_amount_cents || 0) / 100).toLocaleString()}</td>
-                    <td className="py-2 text-right">
-                      <Link to={`/claims/${c.claim_id}`} className="text-brand-600 hover:underline">Open</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+function Field({ label, value }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-0.5">{value || '—'}</p>
     </div>
   );
 }

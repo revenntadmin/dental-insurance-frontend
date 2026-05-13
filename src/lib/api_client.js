@@ -1,35 +1,39 @@
 import axios from 'axios';
-import { auth } from './firebase.js';
+import { get_id_token, logout } from './auth';
+import { env } from './env';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+export const api = axios.create({ baseURL: env.api_base_url });
 
-export const apiClient = axios.create({
-  baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-apiClient.interceptors.request.use(async (config) => {
-  const user = auth.currentUser;
-  if (user) {
-    const token = await user.getIdToken();
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(async (cfg) => {
+  const url = cfg.url || '';
+  const is_public = url.startsWith('/api/scan/') || url.startsWith('/api/intake/');
+  if (!is_public) {
+    const token = await get_id_token();
+    if (token) cfg.headers.Authorization = `Bearer ${token}`;
   }
-  return config;
+  return cfg;
 });
 
-apiClient.interceptors.response.use(
+api.interceptors.response.use(
   (r) => r,
-  (err) => {
-    if (err.response?.status === 401) {
-      // Firebase will refresh tokens silently; a true 401 means session is gone.
-      // Surface the error; ProtectedRoute will redirect when auth state clears.
+  async (err) => {
+    const { response } = err;
+    if (response?.status === 401 && response?.data?.error === 'mfa_required') {
+      try {
+        await logout();
+      } catch {
+        // ignore
+      }
+      window.location.href = '/auth/login?reason=mfa_required';
     }
     return Promise.reject(err);
-  }
+  },
 );
 
-// Public client: no auth header. Used for /scan/:token and /intake/:token endpoints.
-export const publicApiClient = axios.create({
-  baseURL: BASE_URL,
-  headers: { 'Content-Type': 'application/json' },
-});
+export function api_error_message(err, fallback = 'Something went wrong.') {
+  return err?.response?.data?.message || err?.message || fallback;
+}
+
+export function api_error_code(err) {
+  return err?.response?.data?.error || null;
+}

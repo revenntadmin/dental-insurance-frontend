@@ -1,109 +1,79 @@
 import {
   signInWithEmailAndPassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  sendPasswordResetEmail,
-  sendEmailVerification,
   signOut,
-  multiFactor,
   PhoneAuthProvider,
   PhoneMultiFactorGenerator,
+  multiFactor,
   RecaptchaVerifier,
   getMultiFactorResolver,
+  applyActionCode,
+  confirmPasswordReset,
+  sendPasswordResetEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
-import { auth } from './firebase.js';
+import { auth } from './firebase';
 
-let recaptchaVerifier = null;
+export { auth };
 
-export function resetRecaptcha() {
-  if (recaptchaVerifier) {
-    try { recaptchaVerifier.clear(); } catch (_e) { /* noop */ }
-    recaptchaVerifier = null;
-  }
-}
-
-function freshRecaptcha() {
-  // Dispose the old verifier object but leave its DOM node alone —
-  // removing it mid-verification breaks the invisible flow.
-  if (recaptchaVerifier) {
-    try { recaptchaVerifier.clear(); } catch (_e) { /* noop */ }
-    recaptchaVerifier = null;
-  }
-  // Give every new verifier its own element so "already rendered" can never fire.
-  const div = document.createElement('div');
-  document.body.appendChild(div);
-  recaptchaVerifier = new RecaptchaVerifier(auth, div, { size: 'invisible' });
-  return recaptchaVerifier;
-}
-
-export function getRecaptcha() {
-  if (recaptchaVerifier) return recaptchaVerifier;
-  return freshRecaptcha();
-}
-
-export async function loginWithEmail(email, password) {
+export async function login(email, password, recaptcha_el_id) {
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
+    const factors = multiFactor(cred.user).enrolledFactors;
+    if (factors.length === 0) return { status: 'enroll_required', user: cred.user };
     return { status: 'success', user: cred.user };
   } catch (err) {
     if (err.code === 'auth/multi-factor-auth-required') {
       const resolver = getMultiFactorResolver(auth, err);
-      const phoneHint = resolver.hints.find(h => h.factorId === PhoneMultiFactorGenerator.FACTOR_ID);
-      if (!phoneHint) throw err;
-      const provider = new PhoneAuthProvider(auth);
-      const verificationId = await provider.verifyPhoneNumber(
-        { multiFactorHint: phoneHint, session: resolver.session },
-        getRecaptcha()
+      const hint = resolver.hints[0];
+      const recaptcha = new RecaptchaVerifier(auth, recaptcha_el_id, { size: 'invisible' });
+      const phone_prov = new PhoneAuthProvider(auth);
+      const verification_id = await phone_prov.verifyPhoneNumber(
+        { multiFactorHint: hint, session: resolver.session },
+        recaptcha,
       );
-      return { status: 'mfa_required', resolver, verificationId };
+      return {
+        status: 'mfa_required',
+        verification_id,
+        resolver,
+        phone_last_four: hint.phoneNumber.slice(-4),
+      };
     }
     throw err;
   }
 }
 
-export async function completeMfaSignIn(resolver, verificationId, code) {
-  const credential = PhoneAuthProvider.credential(verificationId, code);
-  const assertion = PhoneMultiFactorGenerator.assertion(credential);
-  const cred = await resolver.resolveSignIn(assertion);
-  return cred.user;
+export async function complete_mfa(verification_id, otp, resolver) {
+  const cred = PhoneAuthProvider.credential(verification_id, otp);
+  const assertion = PhoneMultiFactorGenerator.assertion(cred);
+  return (await resolver.resolveSignIn(assertion)).user;
 }
 
-export async function enrollPhoneStart(user, phoneNumber) {
-  const session = await multiFactor(user).getSession();
-  const provider = new PhoneAuthProvider(auth);
-  // Always use a fresh verifier — reusing a stale one causes captcha-check-failed.
-  const verificationId = await provider.verifyPhoneNumber(
-    { phoneNumber, session },
-    freshRecaptcha()
-  );
-  return verificationId;
+export async function start_phone_enrollment(phone_number, recaptcha_el_id) {
+  const session = await multiFactor(auth.currentUser).getSession();
+  const recaptcha = new RecaptchaVerifier(auth, recaptcha_el_id, { size: 'invisible' });
+  const phone_prov = new PhoneAuthProvider(auth);
+  return phone_prov.verifyPhoneNumber({ phoneNumber: phone_number, session }, recaptcha);
 }
 
-export async function enrollPhoneComplete(user, verificationId, code, displayName = 'Phone') {
-  const credential = PhoneAuthProvider.credential(verificationId, code);
-  const assertion = PhoneMultiFactorGenerator.assertion(credential);
-  await multiFactor(user).enroll(assertion, displayName);
+export async function complete_phone_enrollment(verification_id, otp) {
+  const cred = PhoneAuthProvider.credential(verification_id, otp);
+  const assertion = PhoneMultiFactorGenerator.assertion(cred);
+  await multiFactor(auth.currentUser).enroll(assertion, 'Phone');
 }
 
-export function isPhoneEnrolled(user) {
-  if (!user) return false;
-  return multiFactor(user).enrolledFactors.some(f => f.factorId === PhoneMultiFactorGenerator.FACTOR_ID);
+export async function change_password(current_password, new_password) {
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error('not_signed_in');
+  const cred = EmailAuthProvider.credential(user.email, current_password);
+  await reauthenticateWithCredential(user, cred);
+  await updatePassword(user, new_password);
 }
 
-export async function reauthenticate(user, password) {
-  const credential = EmailAuthProvider.credential(user.email, password);
-  await reauthenticateWithCredential(user, credential);
-}
-
-export async function sendEmailVerificationLink(user) {
-  await sendEmailVerification(user);
-}
-
-export async function sendPasswordReset(email) {
-  await sendPasswordResetEmail(auth, email);
-}
-
-export async function logout() {
-  await signOut(auth);
-  resetRecaptcha();
-}
+export const logout = () => signOut(auth);
+export const get_id_token = () => auth.currentUser?.getIdToken();
+export const apply_action_code = (code) => applyActionCode(auth, code);
+export const confirm_password_reset = (code, new_password) =>
+  confirmPasswordReset(auth, code, new_password);
+export const send_password_reset_email = (email) => sendPasswordResetEmail(auth, email);

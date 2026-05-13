@@ -1,79 +1,154 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import PageHeader from '../../components/layout/PageHeader.jsx';
-import Button from '../../components/ui/Button.jsx';
-import StatusBadge from '../../components/shared/StatusBadge.jsx';
-import LoadingState, { ErrorState } from '../../components/shared/LoadingState.jsx';
-import EmptyState from '../../components/shared/EmptyState.jsx';
-import { useClaims } from '../../features/claims/queries.js';
+import { Plus, Search } from 'lucide-react';
+import { useTenancyParam } from '@/hooks/useTenancyParam';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useClaimsWorklist } from '@/features/claims/useClaimsWorklist';
+import { format_money, format_date } from '@/lib/formatters';
+import { PageHeader } from '@/components/PageHeader';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { StatusBadge } from '@/components/StatusBadge';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { EmptyState } from '@/components/EmptyState';
 
-const FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'denied', label: 'Denied' },
+const STATUS_OPTIONS = [
+  '', 'draft', 'validated', 'submitted', 'accepted', 'rejected', 'paid', 'denied', 'appealed',
 ];
 
-export default function ClaimsWorklistPage() {
-  const [status, setStatus] = useState('');
-  const { data, isLoading, error } = useClaims({ status: status || undefined });
+export function ClaimsWorklistPage() {
+  const pid = useTenancyParam();
+  const [q, set_q] = useState('');
+  const [status, set_status] = useState('');
+  const debounced = useDebounce(q);
+  const { data, isLoading } = useClaimsWorklist(pid, { q: debounced, status: status || undefined, sort: 'action_required' });
+  const items = data?.items || [];
 
   return (
     <div>
       <PageHeader
         title="Claims"
-        actions={<Link to="/claims/new"><Button>New claim</Button></Link>}
-      />
-
-      <div className="flex gap-2 mb-4">
-        {FILTERS.map((f) => (
-          <button
-            key={f.value || 'all'}
-            onClick={() => setStatus(f.value)}
-            className={`px-3 py-1.5 rounded text-sm ${status === f.value ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-700'}`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="card">
-        {isLoading ? <LoadingState /> : error ? <ErrorState error={error} /> :
-          !data?.items?.length ? (
-            <EmptyState title="No claims" description="Submitted and in-progress claims will appear here." />
-          ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500 bg-slate-50">
-                <tr>
-                  <th className="px-5 py-2">Service date</th>
-                  <th className="px-5 py-2">Patient</th>
-                  <th className="px-5 py-2">CDT codes</th>
-                  <th className="px-5 py-2">Carrier</th>
-                  <th className="px-5 py-2">Status</th>
-                  <th className="px-5 py-2">Amount</th>
-                  <th className="px-5 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((c) => (
-                  <tr key={c.claim_id} className="table-row">
-                    <td className="px-5 py-2">{c.service_date}</td>
-                    <td className="px-5 py-2">{c.patient_name}</td>
-                    <td className="px-5 py-2">{c.cdt_codes?.join(', ')}</td>
-                    <td className="px-5 py-2">{c.carrier_name}</td>
-                    <td className="px-5 py-2"><StatusBadge status={c.status} /></td>
-                    <td className="px-5 py-2">${((c.billed_amount_cents || 0) / 100).toLocaleString()}</td>
-                    <td className="px-5 py-2 text-right">
-                      <Link to={`/claims/${c.claim_id}`} className="text-brand-600 hover:underline">Open</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )
+        description="Action-required claims appear first, then sorted by service date."
+        actions={
+          <Link to={`/p/${pid}/claims/new`}>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> New claim
+            </Button>
+          </Link>
         }
+      />
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by patient or claim #"
+            value={q}
+            onChange={(e) => set_q(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <select
+          className="h-10 rounded-md border bg-background px-3 text-sm"
+          value={status}
+          onChange={(e) => set_status(e.target.value)}
+        >
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s || 'all'} value={s}>
+              {s ? s : 'All statuses'}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="rounded-lg border bg-card">
+        {isLoading ? (
+          <LoadingSpinner />
+        ) : items.length === 0 ? (
+          <EmptyState title="No claims yet" description="Create your first claim to get started." />
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Patient</TableHead>
+                <TableHead>Service date</TableHead>
+                <TableHead>CDT codes</TableHead>
+                <TableHead>Billed</TableHead>
+                <TableHead>Insurance</TableHead>
+                <TableHead>Pre-Proc?</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((c) => (
+                <TableRow key={c.id}>
+                  <TableCell>
+                    <Link to={`/p/${pid}/claims/${c.id}`} className="font-medium hover:underline">
+                      {c.patient_name}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{format_date(c.service_date)}</TableCell>
+                  <TableCell className="flex flex-wrap gap-1">
+                    {(c.cdt_codes || []).map((code) => (
+                      <Badge key={code} variant="secondary">
+                        {code}
+                      </Badge>
+                    ))}
+                  </TableCell>
+                  <TableCell>{format_money(c.billed_total)}</TableCell>
+                  <TableCell>{c.payer_name}</TableCell>
+                  <TableCell>{c.pre_procedure_id ? 'Y' : 'N'}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={c.status} />
+                  </TableCell>
+                  <TableCell>
+                    <QuickAction pid={pid} claim={c} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
     </div>
   );
+}
+
+function QuickAction({ pid, claim }) {
+  if (claim.status === 'draft') {
+    return (
+      <Link to={`/p/${pid}/claims/${claim.id}/validate`}>
+        <Button size="sm" variant="outline">
+          Validate
+        </Button>
+      </Link>
+    );
+  }
+  if (claim.status === 'validated') {
+    return (
+      <Link to={`/p/${pid}/claims/${claim.id}/submit`}>
+        <Button size="sm">Submit</Button>
+      </Link>
+    );
+  }
+  if (claim.status === 'denied') {
+    return (
+      <Link to={`/p/${pid}/claims/${claim.id}`}>
+        <Button size="sm" variant="outline">
+          Draft Appeal
+        </Button>
+      </Link>
+    );
+  }
+  if (claim.status === 'paid') {
+    return (
+      <Link to={`/p/${pid}/era-receipts?claim_id=${claim.id}`}>
+        <Button size="sm" variant="ghost">
+          View ERA
+        </Button>
+      </Link>
+    );
+  }
+  return null;
 }

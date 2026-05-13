@@ -1,11 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { env } from './env';
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-};
+export const firebase_app = initializeApp({
+  apiKey: env.firebase.api_key,
+  authDomain: env.firebase.auth_domain,
+  projectId: env.firebase.project_id,
+});
 
-export const firebaseApp = initializeApp(firebaseConfig);
-export const auth = getAuth(firebaseApp);
+export const auth = getAuth(firebase_app);
+if (env.firebase.tenant_id) {
+  auth.tenantId = env.firebase.tenant_id;
+}

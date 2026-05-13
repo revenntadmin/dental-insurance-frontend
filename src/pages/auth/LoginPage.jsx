@@ -1,118 +1,103 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { loginWithEmail, completeMfaSignIn, getRecaptcha } from '../../lib/auth.js';
-import { useAuth } from '../../features/auth/AuthContext.jsx';
-import Button from '../../components/ui/Button.jsx';
-import Input from '../../components/ui/Input.jsx';
-import { useToast } from '../../hooks/use_toast.jsx';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { login } from '@/lib/auth';
+import { api } from '@/lib/api_client';
+import { useAuth } from '@/features/auth/useAuth';
+import { useMfa } from '@/features/auth/MfaContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-export default function LoginPage() {
-  const { user, phoneEnrolled, loading } = useAuth();
+const schema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export function LoginPage() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
+  const [search] = useSearchParams();
+  const { refresh_profile } = useAuth();
+  const { set_flow } = useMfa();
+  const [server_error, set_server_error] = useState(null);
+  const [submitting, set_submitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm();
-  const [step, setStep] = useState('credentials'); // credentials | mfa
-  const [mfaState, setMfaState] = useState(null); // { resolver, verificationId }
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
+  const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
-  useEffect(() => {
-    // Prime invisible reCAPTCHA so it can render on submit.
-    try { getRecaptcha(); } catch (_e) { /* noop */ }
-  }, []);
-
-  useEffect(() => {
-    if (!loading && user) {
-      if (!phoneEnrolled) navigate('/enroll-phone', { replace: true });
-      else navigate(location.state?.from?.pathname || '/', { replace: true });
-    }
-  }, [user, phoneEnrolled, loading, navigate, location]);
-
-  async function onCredentialsSubmit(values) {
-    setBusy(true);
+  async function on_submit(values) {
+    set_submitting(true);
+    set_server_error(null);
     try {
-      const res = await loginWithEmail(values.email, values.password);
-      if (res.status === 'mfa_required') {
-        setMfaState({ resolver: res.resolver, verificationId: res.verificationId });
-        setStep('mfa');
+      const result = await login(values.email, values.password, 'recaptcha-container');
+      if (result.status === 'success') {
+        const { data: me } = await api.get('/api/me');
+        await refresh_profile();
+        if (me.role === 'clearclaim_admin') navigate('/admin/dashboard');
+        else navigate(`/p/${me.practice_id}/dashboard`);
+      } else if (result.status === 'enroll_required') {
+        navigate('/auth/enroll-phone');
+      } else if (result.status === 'mfa_required') {
+        set_flow({
+          mode: 'login',
+          verification_id: result.verification_id,
+          resolver: result.resolver,
+          phone_last_four: result.phone_last_four,
+        });
+        navigate('/auth/mfa-code');
       }
-      // success: AuthContext picks up the user; useEffect navigates.
     } catch (err) {
-      toast(err.message || 'Login failed', 'error');
+      const code = err?.code || '';
+      set_server_error(
+        code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found'
+          ? 'Invalid email or password.'
+          : 'Sign-in failed. Please try again.',
+      );
     } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onMfaSubmit(e) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await completeMfaSignIn(mfaState.resolver, mfaState.verificationId, code.trim());
-      // AuthContext will update; useEffect will navigate.
-    } catch (err) {
-      toast(err.message || 'Invalid code', 'error');
-    } finally {
-      setBusy(false);
+      set_submitting(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="card w-full max-w-md p-8">
-        <div className="text-center mb-6">
-          <div className="text-2xl font-bold text-brand-600">ClearClaim</div>
-          <div className="text-sm text-slate-500 mt-1">Sign in to your practice</div>
-        </div>
-
-        {step === 'credentials' && (
-          <form onSubmit={handleSubmit(onCredentialsSubmit)} className="space-y-4">
-            <Input
-              label="Email"
-              type="email"
-              autoComplete="email"
-              {...register('email', { required: 'Email is required' })}
-              error={errors.email?.message}
-            />
-            <Input
-              label="Password"
-              type="password"
-              autoComplete="current-password"
-              {...register('password', { required: 'Password is required' })}
-              error={errors.password?.message}
-            />
-            <Button type="submit" disabled={busy} className="w-full">
-              {busy ? 'Signing in…' : 'Sign in'}
-            </Button>
-            <div className="text-center text-sm">
-              <Link to="/forgot-password" className="text-brand-600 hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-          </form>
-        )}
-
-        {step === 'mfa' && (
-          <form onSubmit={onMfaSubmit} className="space-y-4">
-            <p className="text-sm text-slate-600">
-              We sent a verification code to your phone. Enter it below to continue.
-            </p>
-            <Input
-              label="6-digit code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <Button type="submit" disabled={busy || code.length < 6} className="w-full">
-              {busy ? 'Verifying…' : 'Verify and sign in'}
-            </Button>
-          </form>
-        )}
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-xl font-semibold">Sign in</h1>
+        <p className="text-sm text-muted-foreground">Use your work email to continue.</p>
       </div>
+
+      {search.get('welcome') === 'true' && (
+        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          Your account is ready — sign in to continue.
+        </div>
+      )}
+      {search.get('reason') === 'mfa_required' && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Please sign in again to verify your phone.
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit(on_submit)} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" type="email" autoComplete="email" {...register('email')} />
+          {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link to="/auth/forgot-password" className="text-xs text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <Input id="password" type="password" autoComplete="current-password" {...register('password')} />
+          {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+        </div>
+        {server_error && <p className="text-sm text-destructive">{server_error}</p>}
+        <Button type="submit" className="w-full" disabled={submitting}>
+          {submitting ? 'Signing in…' : 'Sign in'}
+        </Button>
+      </form>
     </div>
   );
 }

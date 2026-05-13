@@ -1,25 +1,13 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from './AuthContext.jsx';
+import { useAuth } from './useAuth';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-export default function ProtectedRoute({ children, requirePhoneEnrolled = true }) {
-  const { user, loading, phoneEnrolled } = useAuth();
+export function ProtectedRoute({ children, admin_only = false }) {
+  const { user, profile, is_admin, is_loading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
-        Loading…
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (requirePhoneEnrolled && !phoneEnrolled) {
-    return <Navigate to="/enroll-phone" replace />;
-  }
-
+  if (is_loading) return <LoadingSpinner label="Verifying your session…" />;
+  if (!user) return <Navigate to="/auth/login" replace state={{ from: location }} />;
+  if (admin_only && profile && !is_admin) return <Navigate to="/auth/access-denied" replace />;
   return children;
 }
