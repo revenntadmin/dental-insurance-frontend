@@ -218,7 +218,7 @@ export function PracticeDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(configs.data?.items || []).map((row) => (
+                    {(configs.data || []).map((row) => (
                       <ConfigRow key={row.key} row={row} on_save={(v) => set_config.mutate({ key: row.key, value: v })} on_clear={() => clear_config.mutate({ key: row.key })} />
                     ))}
                   </TableBody>

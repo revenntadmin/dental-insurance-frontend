@@ -43,7 +43,7 @@ export function SystemConfigPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(data?.items || []).map((row) => (
+                {(data || []).map((row) => (
                   <Row key={row.key} row={row} on_save={(v) => update.mutate({ key: row.key, value: v })} />
                 ))}
               </TableBody>

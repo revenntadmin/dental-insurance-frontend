@@ -35,7 +35,7 @@ export function AdminDashboardPage() {
             <LoadingSpinner />
           ) : (
             <ul className="divide-y text-sm">
-              {(logs.data?.items || []).map((l) => (
+              {(logs.data || []).map((l) => (
                 <li key={l.id} className="flex items-center justify-between py-2">
                   <span>
                     <span className="font-medium">{l.actor_email || 'system'}</span> · {l.action} · {l.resource_type}

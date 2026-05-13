@@ -91,7 +91,7 @@ export function SystemHealthPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(failed.data?.items || []).map((tx) => (
+                {(failed.data || []).map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell>{format_datetime(tx.created_at)}</TableCell>
                     <TableCell>{tx.tx_type}</TableCell>
