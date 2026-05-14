@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, complete_phone_enrollment } from '@/lib/auth';
+import { auth, complete_phone_enrollment, logout } from '@/lib/auth';
 import { api } from '@/lib/api_client';
 import { useMfa } from '@/features/auth/MfaContext';
-import { useAuth } from '@/features/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +10,6 @@ import { Label } from '@/components/ui/label';
 export function EnrollVerifyPage() {
   const navigate = useNavigate();
   const { flow, clear } = useMfa();
-  const { refresh_profile } = useAuth();
   const [otp, set_otp] = useState('');
   const [submitting, set_submitting] = useState(false);
   const [error, set_error] = useState(null);
@@ -27,13 +25,11 @@ export function EnrollVerifyPage() {
     set_error(null);
     try {
       await complete_phone_enrollment(flow.verification_id, otp);
-      const phone_last_4 = auth.currentUser.multiFactor.enrolledFactors[0].phoneNumber.slice(-4);
-      await api.post('/api/me/mfa/confirm-enrollment', { phone_last_4 });
-      await refresh_profile();
-      const { data: me } = await api.get('/api/me');
+      const phone = auth.currentUser.multiFactor.enrolledFactors[0].phoneNumber;
+      await api.post('/api/me/mfa/confirm-enrollment', { phone, phone_last_4: phone.slice(-4) });
       clear();
-      if (me.role === 'clearclaim_admin') navigate('/admin/dashboard');
-      else navigate(`/p/${me.practice_id}/dashboard`);
+      await logout();
+      navigate('/auth/login?enrolled=true', { replace: true });
     } catch {
       set_error('Verification failed. Try again.');
     } finally {

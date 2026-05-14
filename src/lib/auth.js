@@ -50,11 +50,17 @@ export async function complete_mfa(verification_id, otp, resolver) {
   return (await resolver.resolveSignIn(assertion)).user;
 }
 
+let _enrollment_recaptcha = null;
+
 export async function start_phone_enrollment(phone_number, recaptcha_el_id) {
+  if (_enrollment_recaptcha) {
+    try { _enrollment_recaptcha.clear(); } catch {}
+    _enrollment_recaptcha = null;
+  }
   const session = await multiFactor(auth.currentUser).getSession();
-  const recaptcha = new RecaptchaVerifier(auth, recaptcha_el_id, { size: 'invisible' });
+  _enrollment_recaptcha = new RecaptchaVerifier(auth, recaptcha_el_id, { size: 'invisible' });
   const phone_prov = new PhoneAuthProvider(auth);
-  return phone_prov.verifyPhoneNumber({ phoneNumber: phone_number, session }, recaptcha);
+  return phone_prov.verifyPhoneNumber({ phoneNumber: phone_number, session }, _enrollment_recaptcha);
 }
 
 export async function complete_phone_enrollment(verification_id, otp) {

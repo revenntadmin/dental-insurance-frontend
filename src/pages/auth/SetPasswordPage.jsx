@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import zxcvbn from 'zxcvbn';
-import { apply_action_code, confirm_password_reset } from '@/lib/auth';
+import { api } from '@/lib/api_client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,8 +27,9 @@ const STRENGTH_COLORS = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-eme
 export function SetPasswordPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
-  const oob_code = search.get('oobCode');
-  const [link_state, set_link_state] = useState('checking');
+  const token = search.get('token');
+  const [link_state, set_link_state] = useState('checking'); // checking | valid | invalid | expired | used
+  const [first_name, set_first_name] = useState('');
   const [submitting, set_submitting] = useState(false);
   const [server_error, set_server_error] = useState(null);
 
@@ -38,44 +39,61 @@ export function SetPasswordPage() {
 
   useEffect(() => {
     let cancelled = false;
-    async function verify() {
-      if (!oob_code) {
-        set_link_state('invalid');
-        return;
-      }
+    async function validate() {
+      if (!token) { set_link_state('invalid'); return; }
       try {
-        await apply_action_code(oob_code);
-        if (!cancelled) set_link_state('valid');
+        const { data } = await api.get(`/api/invite/${token}`);
+        if (!cancelled) {
+          set_first_name(data.first_name || '');
+          set_link_state('valid');
+        }
       } catch (err) {
         if (!cancelled) {
-          set_link_state(
-            err?.code === 'auth/expired-action-code' || err?.code === 'auth/invalid-action-code'
-              ? 'expired'
-              : 'invalid',
-          );
+          const code = err?.response?.data?.error;
+          if (code === 'invite_used') set_link_state('used');
+          else if (code === 'invite_expired') set_link_state('expired');
+          else set_link_state('invalid');
         }
       }
     }
-    verify();
-    return () => {
-      cancelled = true;
-    };
-  }, [oob_code]);
+    validate();
+    return () => { cancelled = true; };
+  }, [token]);
 
   async function on_submit(values) {
     set_submitting(true);
     set_server_error(null);
     try {
-      await confirm_password_reset(oob_code, values.password);
+      await api.post(`/api/invite/${token}/set-password`, { password: values.password });
       navigate('/auth/login?welcome=true');
-    } catch {
-      set_server_error('Could not set password. The link may have expired.');
+    } catch (err) {
+      const code = err?.response?.data?.error;
+      if (code === 'invite_used' || code === 'invite_expired') {
+        set_link_state(code === 'invite_used' ? 'used' : 'expired');
+      } else {
+        set_server_error('Could not set password. Please try again or contact support.');
+      }
     } finally {
       set_submitting(false);
     }
   }
 
-  if (link_state === 'checking') return <p className="text-sm text-muted-foreground">Verifying link…</p>;
+  if (link_state === 'checking') {
+    return <p className="text-sm text-muted-foreground">Verifying link…</p>;
+  }
+
+  if (link_state === 'used') {
+    return (
+      <div className="space-y-3">
+        <h1 className="text-xl font-semibold">Link already used</h1>
+        <p className="text-sm text-muted-foreground">
+          This invitation has already been used to set a password.{' '}
+          <a className="text-primary underline" href="/auth/login">Sign in</a> or contact your admin to resend the invite.
+        </p>
+      </div>
+    );
+  }
+
   if (link_state === 'expired' || link_state === 'invalid') {
     return (
       <div className="space-y-3">
@@ -94,7 +112,9 @@ export function SetPasswordPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold">Set your password</h1>
+        <h1 className="text-xl font-semibold">
+          {first_name ? `Welcome, ${first_name}!` : 'Set your password'}
+        </h1>
         <p className="text-sm text-muted-foreground">
           Use at least 12 characters, including uppercase, lowercase, and a digit.
         </p>

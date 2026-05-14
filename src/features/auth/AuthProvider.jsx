@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, multiFactor } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { api } from '@/lib/api_client';
 import { AuthContext } from './AuthContext';
@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
       profile,
       id_token,
       is_admin: profile?.role === 'clearclaim_admin',
+      mfa_enrolled: user ? multiFactor(user).enrolledFactors.length > 0 : false,
       is_loading,
       refresh_profile,
     }),

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,10 +19,22 @@ const schema = z.object({
 export function LoginPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
-  const { refresh_profile } = useAuth();
+  const { user, profile, mfa_enrolled, is_loading, refresh_profile } = useAuth();
   const { set_flow } = useMfa();
   const [server_error, set_server_error] = useState(null);
   const [submitting, set_submitting] = useState(false);
+
+  // Redirect already-signed-in users based on Firebase MFA state
+  useEffect(() => {
+    if (is_loading || !user) return;
+    if (!mfa_enrolled) {
+      navigate('/auth/enroll-phone', { replace: true });
+      return;
+    }
+    if (!profile) return;
+    if (profile.role === 'clearclaim_admin') navigate('/admin/dashboard', { replace: true });
+    else if (profile.practice_id) navigate(`/p/${profile.practice_id}/dashboard`, { replace: true });
+  }, [user, profile, mfa_enrolled, is_loading, navigate]);
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
@@ -69,6 +81,11 @@ export function LoginPage() {
       {search.get('welcome') === 'true' && (
         <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
           Your account is ready — sign in to continue.
+        </div>
+      )}
+      {search.get('enrolled') === 'true' && (
+        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          Phone registered — sign in to verify it.
         </div>
       )}
       {search.get('reason') === 'mfa_required' && (

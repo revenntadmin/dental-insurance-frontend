@@ -5,6 +5,7 @@ export const AuthContext = createContext({
   profile: null,
   id_token: null,
   is_admin: false,
+  mfa_enrolled: false,
   is_loading: true,
   refresh_profile: async () => {},
 });
