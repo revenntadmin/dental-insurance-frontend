@@ -11,18 +11,23 @@ const BORDER = {
 };
 
 export const ConfidenceField = forwardRef(function ConfidenceField(
-  { label, value, confidence, onChange, name, type = 'text', placeholder, className },
+  { label, value, confidence, onChange, name, type = 'text', placeholder, className, required, ...props },
   ref,
 ) {
   const b = band(confidence);
-  const display_value = b === 'red' ? '' : value ?? '';
+  // Only blank the value when confidence is explicitly set AND below threshold (extracted but bad).
+  // When confidence is null/undefined (manual entry), always show the typed value.
+  const display_value = (confidence != null && b === 'red') ? '' : value ?? '';
 
   return (
     <div className="space-y-1.5">
       {label && (
         <div className="flex items-center justify-between">
-          <Label htmlFor={name}>{label}</Label>
-          {b !== 'green' && (
+          <Label htmlFor={name}>
+            {label}
+            {props.required && <span className="ml-0.5 text-red-500">*</span>}
+          </Label>
+          {confidence != null && b !== 'green' && (
             <span
               className={cn(
                 'text-xs font-medium',

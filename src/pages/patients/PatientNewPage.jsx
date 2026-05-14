@@ -37,6 +37,18 @@ export function PatientNewPage() {
   const toast = useToast();
   const [patient, set_patient] = useState(empty_patient);
   const [confidences, set_confidences] = useState({});
+  const [errors, set_errors] = useState({});
+
+  const REQUIRED = ['first_name', 'last_name', 'date_of_birth'];
+
+  function validate() {
+    const next = {};
+    for (const f of REQUIRED) {
+      if (!patient[f]?.trim()) next[f] = 'Required';
+    }
+    set_errors(next);
+    return Object.keys(next).length === 0;
+  }
 
   const extract = useExtractDocument(pid);
   const scan = useScanSession(pid, 'patient_info');
@@ -88,7 +100,7 @@ export function PatientNewPage() {
         <TabsContent value="manual">
           <Card>
             <CardContent className="p-6">
-              <ManualForm patient={patient} confidences={confidences} on_change={update_field} />
+              <ManualForm patient={patient} confidences={confidences} on_change={update_field} errors={errors} on_clear_error={(f) => set_errors((e) => ({ ...e, [f]: undefined }))} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -102,6 +114,8 @@ export function PatientNewPage() {
                 patient={patient}
                 confidences={confidences}
                 on_change={update_field}
+                errors={errors}
+                on_clear_error={(f) => set_errors((e) => ({ ...e, [f]: undefined }))}
               />
             </CardContent>
           </Card>
@@ -111,7 +125,7 @@ export function PatientNewPage() {
             <CardContent className="p-6">
               <ScanForm scan={scan} />
               <div className="mt-6">
-                <ManualForm patient={patient} confidences={confidences} on_change={update_field} />
+                <ManualForm patient={patient} confidences={confidences} on_change={update_field} errors={errors} on_clear_error={(f) => set_errors((e) => ({ ...e, [f]: undefined }))} />
               </div>
             </CardContent>
           </Card>
@@ -119,7 +133,7 @@ export function PatientNewPage() {
       </Tabs>
 
       <div className="mt-6 flex justify-end">
-        <Button onClick={() => create.mutate()} disabled={create.isPending}>
+        <Button onClick={() => validate() && create.mutate()} disabled={create.isPending}>
           {create.isPending ? 'Saving…' : 'Save patient'}
         </Button>
       </div>
@@ -127,39 +141,59 @@ export function PatientNewPage() {
   );
 }
 
-function ManualForm({ patient, confidences, on_change }) {
+function ManualForm({ patient, confidences, on_change, errors = {}, on_clear_error }) {
+  function field(name, label, extra = {}) {
+    return (
+      <div className="space-y-1">
+        <ConfidenceField
+          required={name === 'first_name' || name === 'last_name' || name === 'date_of_birth'}
+          label={label}
+          name={name}
+          value={patient[name]}
+          confidence={confidences[name]}
+          onChange={(v) => { on_change(name, v); if (v.trim()) on_clear_error?.(name); }}
+          className={errors[name] ? 'border-red-500 focus-visible:ring-red-500' : ''}
+          {...extra}
+        />
+        {errors[name] && <p className="text-xs text-red-500">{errors[name]}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 gap-4">
-      <ConfidenceField label="First name" name="first_name" value={patient.first_name} confidence={confidences.first_name} onChange={(v) => on_change('first_name', v)} />
-      <ConfidenceField label="Last name" name="last_name" value={patient.last_name} confidence={confidences.last_name} onChange={(v) => on_change('last_name', v)} />
-      <ConfidenceField label="Date of birth" name="date_of_birth" type="date" value={patient.date_of_birth} confidence={confidences.date_of_birth} onChange={(v) => on_change('date_of_birth', v)} />
+      {field('first_name', 'First name')}
+      {field('last_name', 'Last name')}
+      {field('date_of_birth', 'Date of birth', { type: 'date' })}
       <div className="space-y-1.5">
         <Label htmlFor="sex">Sex</Label>
         <Input id="sex" value={patient.sex} onChange={(e) => on_change('sex', e.target.value)} />
       </div>
-      <ConfidenceField label="Phone" name="phone" value={patient.phone} confidence={confidences.phone} onChange={(v) => on_change('phone', v)} />
-      <ConfidenceField label="Email" name="email" value={patient.email} confidence={confidences.email} onChange={(v) => on_change('email', v)} />
-      <ConfidenceField label="Address" name="address_line_1" value={patient.address_line_1} confidence={confidences.address_line_1} onChange={(v) => on_change('address_line_1', v)} />
+      {field('phone', 'Phone')}
+      {field('email', 'Email')}
+      {field('address_line_1', 'Address')}
       <div className="grid grid-cols-3 gap-2">
-        <ConfidenceField label="City" name="city" value={patient.city} confidence={confidences.city} onChange={(v) => on_change('city', v)} />
-        <ConfidenceField label="State" name="state" value={patient.state} confidence={confidences.state} onChange={(v) => on_change('state', v)} />
-        <ConfidenceField label="Zip" name="postal_code" value={patient.postal_code} confidence={confidences.postal_code} onChange={(v) => on_change('postal_code', v)} />
+        {field('city', 'City')}
+        {field('state', 'State')}
+        {field('postal_code', 'Zip')}
       </div>
     </div>
   );
 }
 
-function UploadForm({ pid, extract, on_extracted, patient, confidences, on_change }) {
+function UploadForm({ pid, extract, on_extracted, patient, confidences, on_change, errors, on_clear_error }) {
   const [file, set_file] = useState(null);
+  const [extracted, set_extracted] = useState(false);
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
 
   function on_pick(e) {
     const f = e.target.files?.[0];
     if (!f) return;
     set_file(f);
+    set_extracted(false);
     extract.mutate(
       { file: f, document_type: 'patient_intake' },
-      { onSuccess: (data) => on_extracted(data) },
+      { onSuccess: (data) => { on_extracted(data); set_extracted(true); } },
     );
   }
 
@@ -169,12 +203,21 @@ function UploadForm({ pid, extract, on_extracted, patient, confidences, on_chang
         <Input type="file" accept="image/jpeg,image/png,application/pdf" onChange={on_pick} />
         {extract.isPending && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
       </div>
-      {preview && <img src={preview} alt="preview" className="max-h-64 rounded-md border" />}
-      {!pid && <p className="text-xs text-muted-foreground">Practice not loaded yet</p>}
-      <div>
-        <h3 className="mb-3 text-sm font-semibold">Extracted fields</h3>
-        <ManualForm patient={patient} confidences={confidences} on_change={on_change} />
-      </div>
+      {extract.isPending && (
+        <p className="text-sm text-muted-foreground">Extracting information from document…</p>
+      )}
+      {extracted && (
+        <>
+          {preview && <img src={preview} alt="preview" className="max-h-64 rounded-md border" />}
+          <div>
+            <h3 className="mb-1 text-sm font-semibold">Verify extracted information</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Yellow or red fields may need your review. Make any corrections before saving.
+            </p>
+            <ManualForm patient={patient} confidences={confidences} on_change={on_change} errors={errors} on_clear_error={on_clear_error} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

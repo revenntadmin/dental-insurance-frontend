@@ -17,7 +17,7 @@ export function PatientsListPage() {
   const [q, set_q] = useState('');
   const debounced_q = useDebounce(q);
   const { data, isLoading } = usePatients(pid, { q: debounced_q, limit: 50 });
-  const items = data?.items || [];
+  const items = data || [];
 
   return (
     <div>
