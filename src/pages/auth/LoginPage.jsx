@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,6 +7,8 @@ import { login } from '@/lib/auth';
 import { api } from '@/lib/api_client';
 import { useAuth } from '@/features/auth/useAuth';
 import { useMfa } from '@/features/auth/MfaContext';
+import { useGuestGuard } from '@/features/auth/useGuestGuard';
+import { dashboard_path } from '@/features/auth/authNavigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,22 +21,11 @@ const schema = z.object({
 export function LoginPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
-  const { user, profile, mfa_enrolled, is_loading, refresh_profile } = useAuth();
+  const { refresh_profile } = useAuth();
   const { set_flow } = useMfa();
+  const { is_loading } = useGuestGuard();
   const [server_error, set_server_error] = useState(null);
   const [submitting, set_submitting] = useState(false);
-
-  // Redirect already-signed-in users based on Firebase MFA state
-  useEffect(() => {
-    if (is_loading || !user) return;
-    if (!mfa_enrolled) {
-      navigate('/auth/enroll-phone', { replace: true });
-      return;
-    }
-    if (!profile) return;
-    if (profile.role === 'clearclaim_admin') navigate('/admin/dashboard', { replace: true });
-    else if (profile.practice_id) navigate(`/p/${profile.practice_id}/dashboard`, { replace: true });
-  }, [user, profile, mfa_enrolled, is_loading, navigate]);
 
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
@@ -46,8 +37,7 @@ export function LoginPage() {
       if (result.status === 'success') {
         const { data: me } = await api.get('/api/me');
         await refresh_profile();
-        if (me.role === 'clearclaim_admin') navigate('/admin/dashboard');
-        else navigate(`/p/${me.practice_id}/dashboard`);
+        navigate(dashboard_path(me) ?? '/auth/access-denied');
       } else if (result.status === 'enroll_required') {
         navigate('/auth/enroll-phone');
       } else if (result.status === 'mfa_required') {
@@ -70,6 +60,8 @@ export function LoginPage() {
       set_submitting(false);
     }
   }
+
+  if (is_loading) return null;
 
   return (
     <div className="space-y-4">

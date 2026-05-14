@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { confirm_password_reset } from '@/lib/auth';
+import { useGuestGuard } from '@/features/auth/useGuestGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,8 +20,11 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const oob_code = search.get('oobCode');
+  const { is_loading } = useGuestGuard();
   const [submitting, set_submitting] = useState(false);
   const [error, set_error] = useState(null);
+
+  if (is_loading) return null;
   const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) });
 
   async function on_submit(values) {

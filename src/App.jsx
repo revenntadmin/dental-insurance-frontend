@@ -80,10 +80,11 @@ const IntakeNotFoundPage = lazy(() => import('./pages/intake/IntakeNotFoundPage'
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })));
 
 function RootRedirect() {
-  const { user, profile, is_admin, is_loading } = useAuth();
+  const { user, profile, is_admin, mfa_enrolled, is_loading } = useAuth();
   const location = useLocation();
   if (is_loading) return <LoadingSpinner label="Loading…" />;
   if (!user) return <Navigate to="/auth/login" replace state={{ from: location }} />;
+  if (!mfa_enrolled) return <Navigate to="/auth/enroll-phone" replace />;
   if (is_admin) return <Navigate to="/admin/dashboard" replace />;
   if (profile?.practice_id) return <Navigate to={`/p/${profile.practice_id}/dashboard`} replace />;
   return <Navigate to="/auth/access-denied" replace />;

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMfa } from '@/features/auth/MfaContext';
 import { useAuth } from '@/features/auth/useAuth';
+import { useGuestGuard } from '@/features/auth/useGuestGuard';
+import { dashboard_path } from '@/features/auth/authNavigation';
 import { complete_mfa } from '@/lib/auth';
 import { api } from '@/lib/api_client';
 import { format_phone_last_four } from '@/lib/formatters';
@@ -13,6 +15,7 @@ export function MfaCodePage() {
   const navigate = useNavigate();
   const { flow, clear } = useMfa();
   const { refresh_profile } = useAuth();
+  useGuestGuard();
   const [otp, set_otp] = useState('');
   const [submitting, set_submitting] = useState(false);
   const [error, set_error] = useState(null);
@@ -38,8 +41,7 @@ export function MfaCodePage() {
       const { data: me } = await api.get('/api/me');
       await refresh_profile();
       clear();
-      if (me.role === 'clearclaim_admin') navigate('/admin/dashboard');
-      else navigate(`/p/${me.practice_id}/dashboard`);
+      navigate(dashboard_path(me) ?? '/auth/access-denied');
     } catch {
       set_error('That code looks wrong. Try again.');
     } finally {

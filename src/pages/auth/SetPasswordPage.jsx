@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import zxcvbn from 'zxcvbn';
 import { api } from '@/lib/api_client';
+import { useGuestGuard } from '@/features/auth/useGuestGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,6 +29,7 @@ export function SetPasswordPage() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
   const token = search.get('token');
+  const { is_loading: auth_loading } = useGuestGuard();
   const [link_state, set_link_state] = useState('checking'); // checking | valid | invalid | expired | used
   const [first_name, set_first_name] = useState('');
   const [submitting, set_submitting] = useState(false);
@@ -78,7 +80,7 @@ export function SetPasswordPage() {
     }
   }
 
-  if (link_state === 'checking') {
+  if (auth_loading || link_state === 'checking') {
     return <p className="text-sm text-muted-foreground">Verifying link…</p>;
   }
 

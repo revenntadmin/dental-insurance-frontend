@@ -4,6 +4,7 @@ import { auth, start_phone_enrollment } from '@/lib/auth';
 import { api } from '@/lib/api_client';
 import { useMfa } from '@/features/auth/MfaContext';
 import { useAuth } from '@/features/auth/useAuth';
+import { useEnrollGuard } from '@/features/auth/useEnrollGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +13,7 @@ export function EnrollPhonePage() {
   const navigate = useNavigate();
   const { set_flow } = useMfa();
   const { refresh_profile } = useAuth();
+  const { is_loading } = useEnrollGuard();
   const [phone, set_phone] = useState('+1');
   const [submitting, set_submitting] = useState(false);
   const [error, set_error] = useState(null);
@@ -57,6 +59,8 @@ export function EnrollPhonePage() {
       set_submitting(false);
     }
   }
+
+  if (is_loading) return null;
 
   if (already_enrolled) {
     return (

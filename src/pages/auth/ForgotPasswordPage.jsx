@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { send_password_reset_email } from '@/lib/auth';
+import { useGuestGuard } from '@/features/auth/useGuestGuard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export function ForgotPasswordPage() {
+  const { is_loading } = useGuestGuard();
   const [email, set_email] = useState('');
   const [sent, set_sent] = useState(false);
   const [submitting, set_submitting] = useState(false);
+
+  if (is_loading) return null;
 
   async function on_submit(e) {
     e.preventDefault();
