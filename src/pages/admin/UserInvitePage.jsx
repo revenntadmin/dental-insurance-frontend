@@ -90,7 +90,7 @@ export function UserInvitePage() {
                 onChange={(e) => set_form((f) => ({ ...f, practice_id: e.target.value }))}
               >
                 <option value="">Select…</option>
-                {(practices.data?.items || []).map((p) => (
+                {(practices.data || []).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
