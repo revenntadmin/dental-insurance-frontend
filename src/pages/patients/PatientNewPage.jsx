@@ -58,13 +58,13 @@ export function PatientNewPage() {
   }
 
   function apply_extracted(payload) {
-    const fields = payload?.fields || {};
+    const fields = payload?.extracted || payload || {};
     const next = { ...patient };
     const conf = { ...confidences };
     for (const key of Object.keys(empty_patient)) {
-      if (fields[key]) {
-        next[key] = fields[key].value ?? '';
-        conf[key] = fields[key].confidence ?? null;
+      if (fields[key] != null) {
+        next[key] = fields[key] ?? '';
+        conf[key] = null;
       }
     }
     set_patient(next);

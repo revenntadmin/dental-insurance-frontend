@@ -57,8 +57,11 @@ export async function start_phone_enrollment(phone_number, recaptcha_el_id) {
     try { _enrollment_recaptcha.clear(); } catch {}
     _enrollment_recaptcha = null;
   }
+  const container = document.getElementById(recaptcha_el_id);
+  if (container) container.innerHTML = '';
   const session = await multiFactor(auth.currentUser).getSession();
   _enrollment_recaptcha = new RecaptchaVerifier(auth, recaptcha_el_id, { size: 'invisible' });
+  await _enrollment_recaptcha.render();
   const phone_prov = new PhoneAuthProvider(auth);
   return phone_prov.verifyPhoneNumber({ phoneNumber: phone_number, session }, _enrollment_recaptcha);
 }
@@ -75,6 +78,13 @@ export async function change_password(current_password, new_password) {
   const cred = EmailAuthProvider.credential(user.email, current_password);
   await reauthenticateWithCredential(user, cred);
   await updatePassword(user, new_password);
+}
+
+export async function reauthenticate(password) {
+  const user = auth.currentUser;
+  if (!user?.email) throw new Error('not_signed_in');
+  const cred = EmailAuthProvider.credential(user.email, password);
+  await reauthenticateWithCredential(user, cred);
 }
 
 export const logout = () => signOut(auth);
