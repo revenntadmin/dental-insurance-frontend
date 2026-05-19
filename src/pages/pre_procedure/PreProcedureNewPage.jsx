@@ -29,6 +29,11 @@ export function PreProcedureNewPage() {
     queryKey: ['practice', pid, 'patients', { limit: 100 }],
     queryFn: () => api.get(`/api/practice/${pid}/patients`, { params: { limit: 100 } }).then((r) => r.data),
   });
+  const providers = useQuery({
+    enabled: !!pid,
+    queryKey: ['practice', pid, 'providers', { active: true }],
+    queryFn: () => api.get(`/api/practice/${pid}/providers`, { params: { active: true } }).then((r) => r.data),
+  });
   const patient = useMemo(() => patients.data?.items?.find((p) => p.id === form.patient_id), [patients.data, form.patient_id]);
   const create = useCreatePreProcedure(pid);
 
@@ -88,7 +93,7 @@ export function PreProcedureNewPage() {
               onChange={(e) => set_form((f) => ({ ...f, provider_id: e.target.value }))}
             >
               <option value="">Select…</option>
-              {(patient?.providers || []).map((p) => (
+              {(providers.data || []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.first_name} {p.last_name}
                 </option>

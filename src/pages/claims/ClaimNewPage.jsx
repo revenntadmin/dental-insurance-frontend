@@ -57,7 +57,11 @@ export function ClaimNewPage() {
     queryKey: ['practice', pid, 'patients', { limit: 100 }],
     queryFn: () => api.get(`/api/practice/${pid}/patients`, { params: { limit: 100 } }).then((r) => r.data),
   });
-
+  const providers = useQuery({
+    enabled: !!pid,
+    queryKey: ['practice', pid, 'providers', { active: true }],
+    queryFn: () => api.get(`/api/practice/${pid}/providers`, { params: { active: true } }).then((r) => r.data),
+  });
 
   const patient = useMemo(
     () => patients.data?.find((p) => p.id === draft.patient_id),
@@ -126,7 +130,7 @@ export function ClaimNewPage() {
               onChange={(e) => set_draft((d) => ({ ...d, provider_id: e.target.value }))}
             >
               <option value="">Select a provider…</option>
-              {(patient?.providers || []).map((p) => (
+              {(providers.data || []).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.first_name} {p.last_name}
                 </option>
