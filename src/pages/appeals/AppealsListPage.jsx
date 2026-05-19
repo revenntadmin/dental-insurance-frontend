@@ -49,7 +49,7 @@ export function AppealsListPage() {
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <LoadingSpinner />
-        ) : (data?.items?.length ?? 0) === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <EmptyState title="No appeals" />
         ) : (
           <Table>
@@ -63,7 +63,7 @@ export function AppealsListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((a) => (
+              {data.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell>
                     <Link to={`/p/${pid}/appeals/${a.id}`} className="text-primary hover:underline">

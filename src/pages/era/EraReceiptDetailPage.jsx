@@ -34,7 +34,7 @@ export function EraReceiptDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(data.lines || []).map((line) => (
+              {(data.era_lines || []).map((line) => (
                 <TableRow key={line.id}>
                   <TableCell>
                     <Link to={`/p/${pid}/claims/${line.claim_id}`} className="text-primary hover:underline">

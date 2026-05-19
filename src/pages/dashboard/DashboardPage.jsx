@@ -85,11 +85,11 @@ export function DashboardPage() {
           <CardContent>
             {alerts.isLoading ? (
               <LoadingSpinner />
-            ) : (alerts.data?.items?.length ?? 0) === 0 ? (
+            ) : (alerts.data?.length ?? 0) === 0 ? (
               <EmptyState title="You're all caught up" description="No claims need attention right now." />
             ) : (
               <ul className="divide-y">
-                {alerts.data.items.map((a) => (
+                {alerts.data.map((a) => (
                   <li key={a.id} className="flex items-center justify-between py-2 text-sm">
                     <span>
                       <Link to={`/p/${pid}/claims/${a.id}`} className="font-medium hover:underline">
@@ -132,11 +132,11 @@ export function DashboardPage() {
         <CardContent>
           {eras.isLoading ? (
             <LoadingSpinner />
-          ) : (eras.data?.items?.length ?? 0) === 0 ? (
+          ) : (eras.data?.length ?? 0) === 0 ? (
             <EmptyState title="No ERAs yet" />
           ) : (
             <ul className="divide-y">
-              {eras.data.items.map((era) => (
+              {eras.data.map((era) => (
                 <li key={era.id} className="flex items-center justify-between py-2 text-sm">
                   <Link to={`/p/${pid}/era-receipts/${era.id}`} className="hover:underline">
                     {era.payer_name} · #{era.check_number}

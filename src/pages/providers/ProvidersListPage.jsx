@@ -46,7 +46,7 @@ export function ProvidersListPage() {
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <LoadingSpinner />
-        ) : (data?.items?.length ?? 0) === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <EmptyState title="No providers" />
         ) : (
           <Table>
@@ -61,7 +61,7 @@ export function ProvidersListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((p) => (
+              {data.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">
                     {p.first_name} {p.last_name}

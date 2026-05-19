@@ -33,7 +33,7 @@ export function InsurancePlansListPage() {
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <LoadingSpinner />
-        ) : (data?.items?.length ?? 0) === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <EmptyState title="No insurance plans" />
         ) : (
           <Table>
@@ -47,7 +47,7 @@ export function InsurancePlansListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((p) => (
+              {data.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.payer_name}</TableCell>
                   <TableCell className="font-mono text-xs">{p.payer_id}</TableCell>

@@ -146,7 +146,7 @@ export function ClaimDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(claim.procedures || []).map((p) => (
+                  {(claim.claim_procedures || []).map((p) => (
                     <TableRow key={p.id}>
                       <TableCell className="font-mono">{p.cdt_code}</TableCell>
                       <TableCell>{p.description}</TableCell>
@@ -183,11 +183,11 @@ export function ClaimDetailPage() {
             <CardContent>
               {validation.isLoading ? (
                 <LoadingSpinner />
-              ) : (validation.data?.issues?.length ?? 0) === 0 ? (
+              ) : (validation.data?.length ?? 0) === 0 ? (
                 <p className="text-sm text-muted-foreground">No issues recorded yet.</p>
               ) : (
                 <ul className="space-y-2">
-                  {validation.data.issues.map((i, idx) => (
+                  {validation.data.map((i, idx) => (
                     <li key={idx} className="rounded-md border p-3 text-sm">
                       <span className="font-medium">{i.severity}:</span> {i.message}
                     </li>
@@ -220,7 +220,7 @@ export function ClaimDetailPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(history.data?.items || []).map((h) => (
+                  {(history.data || []).map((h) => (
                     <TableRow key={h.id}>
                       <TableCell>{format_date(h.changed_at)}</TableCell>
                       <TableCell>
@@ -239,7 +239,7 @@ export function ClaimDetailPage() {
         <TabsContent value="era">
           {era.isLoading ? (
             <LoadingSpinner />
-          ) : (era.data?.items?.length ?? 0) === 0 ? (
+          ) : (era.data?.length ?? 0) === 0 ? (
             <EmptyState title="No ERA yet" description="ERA data will appear here once received from the payer." />
           ) : (
             <Card>
@@ -255,7 +255,7 @@ export function ClaimDetailPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(era.data.items || []).map((r) => (
+                    {(era.data || []).map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{r.check_number}</TableCell>
                         <TableCell>{format_money(r.total_paid)}</TableCell>

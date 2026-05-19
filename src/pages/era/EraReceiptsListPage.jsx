@@ -17,7 +17,7 @@ export function EraReceiptsListPage() {
       <div className="rounded-lg border bg-card">
         {isLoading ? (
           <LoadingSpinner />
-        ) : (data?.items?.length ?? 0) === 0 ? (
+        ) : (data?.length ?? 0) === 0 ? (
           <EmptyState title="No ERAs yet" />
         ) : (
           <Table>
@@ -31,7 +31,7 @@ export function EraReceiptsListPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.items.map((r) => (
+              {data.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>
                     <Link to={`/p/${pid}/era-receipts/${r.id}`} className="text-primary hover:underline">

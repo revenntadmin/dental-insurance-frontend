@@ -24,7 +24,7 @@ export function ClaimsWorklistPage() {
   const [status, set_status] = useState('');
   const debounced = useDebounce(q);
   const { data, isLoading } = useClaimsWorklist(pid, { q: debounced, status: status || undefined, sort: 'action_required' });
-  const items = data?.items || [];
+  const items = data || [];
 
   return (
     <div>
