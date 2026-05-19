@@ -82,7 +82,7 @@ export function EligibilityCheckPage() {
               onChange={(e) => { set_patient_id(e.target.value); set_insurance_id(''); set_result(null); }}
             >
               <option value="">Select…</option>
-              {patients.data?.items?.map((p) => (
+              {patients.data?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.last_name}, {p.first_name}
                 </option>
