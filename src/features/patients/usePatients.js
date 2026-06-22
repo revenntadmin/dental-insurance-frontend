@@ -6,5 +6,6 @@ export function usePatients(pid, params = {}) {
     enabled: !!pid,
     queryKey: ['practice', pid, 'patients', params],
     queryFn: () => api.get(`/api/practice/${pid}/patients`, { params }).then((r) => r.data),
+    placeholderData: (prev) => prev,
   });
 }
