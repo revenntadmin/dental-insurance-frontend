@@ -18,6 +18,8 @@ export default defineConfig({
     },
   },
   server: {
+    // Firebase phone MFA rejects "localhost"; use 127.0.0.1 and add it to Authorized domains.
+    host: '127.0.0.1',
     port: 5173,
   },
 });

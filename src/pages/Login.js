@@ -1,22 +1,23 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  signInWithEmailAndPassword,
-  getMultiFactorResolver,
-  PhoneAuthProvider,
-  PhoneMultiFactorGenerator,
-  RecaptchaVerifier,
-} from 'firebase/auth';
-import { auth } from '../firebase';
+import { useNavigate, useLocation } from 'react-router-dom';
+import apiClient from '../api/apiClient';
+import { login } from '../lib/auth';
+import { useAuth } from '../context/AuthContext';
+import { useMfa } from '../context/MfaContext';
+import { useGuestGuard } from '../hooks/useGuestGuard';
+import { dashboardPath } from '../lib/authNavigation';
+import { skipMfa } from '../lib/mfa';
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { refreshProfile } = useAuth();
+  const { setFlow } = useMfa();
+  const { loading } = useGuestGuard();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [mfaResolver, setMfaResolver] = useState(null);
-  const [verificationId, setVerificationId] = useState(null);
-  const [smsCode, setSmsCode] = useState('');
+  const [message] = useState(location.state?.message || '');
   const [submitting, setSubmitting] = useState(false);
 
   async function handleLogin(e) {
@@ -24,73 +25,53 @@ export default function Login() {
     setError('');
     setSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate('/');
-    } catch (err) {
-      if (err.code === 'auth/multi-factor-auth-required') {
-        const resolver = getMultiFactorResolver(auth, err);
-        setMfaResolver(resolver);
-
-        const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-        });
-        const phoneInfoOptions = {
-          multiFactorHint: resolver.hints[0],
-          session: resolver.session,
-        };
-        const phoneAuthProvider = new PhoneAuthProvider(auth);
-        const id = await phoneAuthProvider.verifyPhoneNumber(phoneInfoOptions, recaptchaVerifier);
-        setVerificationId(id);
-      } else {
-        setError(err.message || 'Failed to sign in');
+      const { data } = await apiClient.get('/api/auth/user-exists', { params: { email } });
+      if (!data.exists) {
+        setError('No ClearClaim account exists for that email.');
+        return;
       }
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
-  async function handleVerifyCode(e) {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      const credential = PhoneAuthProvider.credential(verificationId, smsCode);
-      const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(credential);
-      await mfaResolver.resolveSignIn(multiFactorAssertion);
-      navigate('/');
+      const result = await login(email, password, skipMfa ? null : 'recaptcha-container');
+      if (result.status === 'success' || (skipMfa && result.status === 'enroll_required')) {
+        await apiClient.post('/api/auth/log-login');
+        const profile = await refreshProfile();
+        navigate(dashboardPath(profile) || '/');
+      } else if (result.status === 'enroll_required') {
+        navigate('/mfa-enroll');
+      } else if (result.status === 'mfa_required') {
+        if (skipMfa) {
+          setError('This account has MFA enabled. Set VITE_SKIP_MFA=false to sign in with SMS.');
+          return;
+        }
+        setFlow({
+          mode: 'login',
+          verificationId: result.verificationId,
+          resolver: result.resolver,
+          phoneLastFour: result.phoneLastFour,
+        });
+        navigate('/mfa-verify');
+      }
     } catch (err) {
-      setError(err.message || 'Invalid verification code');
+      const code = err?.code || '';
+      setError(
+        code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found'
+          ? 'Invalid email or password.'
+          : err.message || 'Failed to sign in',
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (mfaResolver && verificationId) {
-    return (
-      <div className="auth-page">
-        <form className="auth-form" onSubmit={handleVerifyCode}>
-          <h1>Enter verification code</h1>
-          <p>We texted a code to your enrolled phone number.</p>
-          <label htmlFor="smsCode">Verification code</label>
-          <input
-            id="smsCode"
-            value={smsCode}
-            onChange={(e) => setSmsCode(e.target.value)}
-            required
-          />
-          {error && <p className="form-error">{error}</p>}
-          <button type="submit" disabled={submitting}>
-            Verify
-          </button>
-        </form>
-      </div>
-    );
+  if (loading) {
+    return <div className="page-loading">Loading...</div>;
   }
 
   return (
     <div className="auth-page">
       <form className="auth-form" onSubmit={handleLogin}>
         <h1>Sign in to ClearClaim</h1>
+        {message && <p>{message}</p>}
         <label htmlFor="email">Email</label>
         <input
           id="email"
@@ -109,9 +90,9 @@ export default function Login() {
         />
         {error && <p className="form-error">{error}</p>}
         <button type="submit" disabled={submitting}>
-          Sign in
+          {submitting ? 'Signing in...' : 'Sign in'}
         </button>
-        <div id="recaptcha-container" />
+        {!skipMfa && <div id="recaptcha-container" />}
       </form>
     </div>
   );
