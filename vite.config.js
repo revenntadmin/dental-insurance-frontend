@@ -1,40 +1,20 @@
-import { defineConfig } from 'vite';
+import { defineConfig, transformWithEsbuild } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
-import path from 'path';
 
 export default defineConfig({
   plugins: [
+    {
+      name: 'treat-js-files-as-jsx',
+      async transform(code, id) {
+        if (!id.match(/src\/.*\.js$/)) return null;
+        return transformWithEsbuild(code, id, { loader: 'jsx', jsx: 'automatic' });
+      },
+    },
     react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
-      manifest: {
-        name: 'ClearClaim Scan',
-        short_name: 'ClearClaim',
-        description: 'ClearClaim patient capture and intake',
-        theme_color: '#0f172a',
-        background_color: '#ffffff',
-        display: 'standalone',
-        start_url: '/',
-        icons: [
-          {
-            src: '/favicon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        runtimeCaching: [],
-      },
-    }),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: { '.js': 'jsx' },
     },
   },
   server: {
