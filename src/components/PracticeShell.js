@@ -59,6 +59,14 @@ export default function PracticeShell({ children }) {
           >
             Dashboard
           </NavLink>
+          <NavLink
+            to={`${base}/patients`}
+            className={({ isActive }) =>
+              `practice-shell__nav-link${isActive ? ' practice-shell__nav-link--active' : ''}`
+            }
+          >
+            Patients
+          </NavLink>
         </nav>
 
         <div className="practice-shell__account" ref={menuRef}>

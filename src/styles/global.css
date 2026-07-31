@@ -173,6 +173,30 @@ button:disabled {
   line-height: 1.4;
 }
 
+.page-header a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.page-header a:hover {
+  text-decoration: underline;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.toolbar__search {
+  flex: 1;
+  max-width: 360px;
+  background: var(--color-surface);
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -199,6 +223,14 @@ button:disabled {
 
 .data-table tr:last-child td {
   border-bottom: none;
+}
+
+.data-table__row--clickable {
+  cursor: pointer;
+}
+
+.data-table__row--clickable:hover td {
+  background: var(--color-bg);
 }
 
 .data-table a {
@@ -412,6 +444,244 @@ button:disabled {
 .settings-form textarea:disabled {
   background: var(--color-bg);
   color: var(--color-text-muted);
+}
+
+/* Two-up form layout that collapses to a single column on narrow screens. */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-sm) var(--space-lg);
+  align-items: start;
+  max-width: 820px;
+}
+
+/* Headings, hints, dividers, messages and the submit button span the full width. */
+.form-grid > * {
+  grid-column: 1 / -1;
+}
+
+.form-grid > .form-field {
+  grid-column: auto;
+}
+
+.form-grid > .form-field--full {
+  grid-column: 1 / -1;
+}
+
+.form-grid > button {
+  justify-self: start;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* Fields sit read-only until their section is put into edit mode. */
+.form-field input:disabled,
+.form-field select:disabled,
+.form-field textarea:disabled {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  opacity: 1;
+  -webkit-text-fill-color: var(--color-text-muted);
+}
+
+/* Independently editable card — one per section of a record. */
+.section-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-lg);
+  max-width: 820px;
+}
+
+.section-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.section-card__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.section-card__edit {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  padding: var(--space-xs) var(--space-md);
+  font-size: 0.9rem;
+}
+
+.section-card__edit:hover {
+  background: var(--color-bg);
+}
+
+/* Separates a read-only group from the editable fields within one card. */
+.section-card__divider {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: var(--space-md) 0 var(--space-xs);
+}
+
+.section-card__subtitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.section-card > .form-hint {
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-md);
+}
+
+/* Several independently editable groups sharing one card, split by rules. */
+.editable-row + .editable-row {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.plan-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.plan-heading__payer {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+/* Coverage rank reads at a glance when several plans share a card. */
+.plan-badge {
+  flex-shrink: 0;
+  padding: 2px var(--space-sm);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.plan-badge--primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.plan-badge--secondary {
+  background: #dde6f3;
+  color: var(--color-primary-hover);
+}
+
+.plan-badge--tertiary {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.plan-badge--none,
+.plan-badge--new {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.plan-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-md);
+}
+
+.plan-details__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plan-details__item--wide {
+  grid-column: 1 / -1;
+}
+
+.plan-details__label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.plan-details__value {
+  font-size: 0.95rem;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.plan-details__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+}
+
+.plan-details__note {
+  margin-top: var(--space-sm);
+}
+
+.section-card__message {
+  margin-top: var(--space-md);
+}
+
+.section-card__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+
+/* Keeps the destructive action away from Save. */
+.section-card__delete {
+  margin-left: auto;
+}
+
+.section-card__confirm {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.button-danger {
+  background: transparent;
+  color: var(--color-danger);
+  border: 1px solid var(--color-border);
+}
+
+.button-danger:hover {
+  background: #fdf3f2;
+  color: var(--color-danger);
+}
+
+.button-secondary {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+.button-secondary:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .settings-section {

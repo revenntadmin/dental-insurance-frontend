@@ -7,6 +7,8 @@ import AuthAction from '../pages/AuthAction';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminPracticeDetail from '../pages/admin/AdminPracticeDetail';
 import PracticeDashboard from '../pages/practice/Dashboard';
+import PatientsPage from '../pages/practice/Patients';
+import PatientDetailPage from '../pages/practice/PatientDetail';
 import ProfilePage from '../pages/account/Profile';
 import SettingsPage from '../pages/account/Settings';
 import UserManagementPage from '../pages/account/UserManagement';
@@ -41,6 +43,8 @@ export default function AppRoutes() {
         <Route path="/p/:pid" element={<PracticeRoute />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<PracticeDashboard />} />
+          <Route path="patients" element={<PatientsPage />} />
+          <Route path="patients/:patientId" element={<PatientDetailPage />} />
           <Route path="account/profile" element={<ProfilePage />} />
           <Route path="account/users" element={<UserManagementPage />} />
           <Route path="account/settings" element={<SettingsPage />} />
