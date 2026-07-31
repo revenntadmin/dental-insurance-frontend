@@ -1,8 +1,7 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import AppShell from '../components/AppShell';
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute() {
   const { isAuthenticated, loading, mfaEnrolled } = useAuth();
   const location = useLocation();
 
@@ -18,5 +17,5 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/mfa-enroll" replace />;
   }
 
-  return <AppShell>{children}</AppShell>;
+  return <Outlet />;
 }

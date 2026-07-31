@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import Login from '../pages/Login';
 import MfaVerify from '../pages/MfaVerify';
 import MfaEnroll from '../pages/MfaEnroll';
@@ -6,10 +6,16 @@ import MfaEnrollVerify from '../pages/MfaEnrollVerify';
 import AuthAction from '../pages/AuthAction';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminPracticeDetail from '../pages/admin/AdminPracticeDetail';
+import PracticeDashboard from '../pages/practice/Dashboard';
+import ProfilePage from '../pages/account/Profile';
+import SettingsPage from '../pages/account/Settings';
+import UserManagementPage from '../pages/account/UserManagement';
 import NotFound from '../pages/NotFound';
 import GuestRoute from './GuestRoute';
 import EnrollRoute from './EnrollRoute';
+import ProtectedRoute from './ProtectedRoute';
 import AdminRoute from './AdminRoute';
+import PracticeRoute from './PracticeRoute';
 
 export default function AppRoutes() {
   return (
@@ -26,22 +32,21 @@ export default function AppRoutes() {
 
       <Route path="/auth/action" element={<AuthAction />} />
 
-      <Route
-        path="/"
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/practice/:id"
-        element={
-          <AdminRoute>
-            <AdminPracticeDetail />
-          </AdminRoute>
-        }
-      />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminRoute />}>
+          <Route path="/" element={<AdminDashboard />} />
+          <Route path="/admin/practice/:id" element={<AdminPracticeDetail />} />
+        </Route>
+
+        <Route path="/p/:pid" element={<PracticeRoute />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<PracticeDashboard />} />
+          <Route path="account/profile" element={<ProfilePage />} />
+          <Route path="account/users" element={<UserManagementPage />} />
+          <Route path="account/settings" element={<SettingsPage />} />
+        </Route>
+      </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
