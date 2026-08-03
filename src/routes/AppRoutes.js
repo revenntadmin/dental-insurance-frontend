@@ -6,6 +6,9 @@ import MfaEnrollVerify from '../pages/MfaEnrollVerify';
 import AuthAction from '../pages/AuthAction';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import AdminPracticeDetail from '../pages/admin/AdminPracticeDetail';
+import PayersPage from '../pages/admin/Payers';
+import PayerDetailPage from '../pages/admin/PayerDetail';
+import ClearinghousesPage from '../pages/admin/Clearinghouses';
 import PracticeDashboard from '../pages/practice/Dashboard';
 import PatientsPage from '../pages/practice/Patients';
 import PatientDetailPage from '../pages/practice/PatientDetail';
@@ -38,6 +41,9 @@ export default function AppRoutes() {
         <Route element={<AdminRoute />}>
           <Route path="/" element={<AdminDashboard />} />
           <Route path="/admin/practice/:id" element={<AdminPracticeDetail />} />
+          <Route path="/admin/payer" element={<PayersPage />} />
+          <Route path="/admin/payer/:id" element={<PayerDetailPage />} />
+          <Route path="/admin/clearinghouse" element={<ClearinghousesPage />} />
         </Route>
 
         <Route path="/p/:pid" element={<PracticeRoute />}>

@@ -6,7 +6,15 @@ import { toFormValues } from '../lib/forms';
 import { PLAN_CREATE_FIELDS } from '../lib/insurancePlans';
 
 /** Always-editing row for adding coverage. `orderOptions` excludes taken slots. */
-export default function NewInsurancePlanForm({ patientId, orderOptions, onCreated, onCancel }) {
+export default function NewInsurancePlanForm({
+  patientId,
+  orderOptions,
+  payers,
+  payersLoading,
+  payersError,
+  onCreated,
+  onCancel,
+}) {
   const [form, setForm] = useState(() => ({
     ...toFormValues(null, PLAN_CREATE_FIELDS),
     coordination_order: orderOptions[0] || '',
@@ -57,6 +65,9 @@ export default function NewInsurancePlanForm({ patientId, orderOptions, onCreate
             idPrefix="new-plan"
             orderOptions={orderOptions}
             creating
+            payers={payers}
+            payersLoading={payersLoading}
+            payersError={payersError}
           />
         </div>
 

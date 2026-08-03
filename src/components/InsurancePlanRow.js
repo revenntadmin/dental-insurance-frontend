@@ -7,7 +7,15 @@ import { changedFields, toFormValues } from '../lib/forms';
 import { PLAN_FIELDS, availableOrders, formatCoordinationOrder } from '../lib/insurancePlans';
 
 /** One saved plan inside the shared insurance card, editable on its own. */
-export default function InsurancePlanRow({ plan, plans, onSaved, onDeleted }) {
+export default function InsurancePlanRow({
+  plan,
+  plans,
+  payers,
+  payersLoading,
+  payersError,
+  onSaved,
+  onDeleted,
+}) {
   const [form, setForm] = useState(() => toFormValues(plan, PLAN_FIELDS));
 
   function updateField(field, value) {
@@ -61,6 +69,9 @@ export default function InsurancePlanRow({ plan, plans, onSaved, onDeleted }) {
             orderOptions={availableOrders(plans, order)}
             payerName={plan.payer_name}
             payerNameReported={plan.payer_name_reported}
+            payers={payers}
+            payersLoading={payersLoading}
+            payersError={payersError}
           />
         ) : (
           <InsurancePlanDetails plan={plan} />

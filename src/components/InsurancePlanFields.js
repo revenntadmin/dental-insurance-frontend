@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import {
   SUBSCRIBER_RELATIONSHIPS,
   formatCoordinationOrder,
   formatRelationship,
 } from '../lib/insurancePlans';
+import { payerOptions } from '../lib/payers';
 
 /**
  * The plan field grid, shared by the edit and create cards. `idPrefix` keeps input
@@ -17,8 +19,12 @@ export default function InsurancePlanFields({
   creating = false,
   payerName,
   payerNameReported,
+  payers = [],
+  payersLoading = false,
+  payersError = '',
 }) {
   const id = (name) => `${idPrefix}-${name}`;
+  const payerChoices = useMemo(() => payerOptions(payers, form.payer_id), [payers, form.payer_id]);
 
   return (
     <>
@@ -52,14 +58,39 @@ export default function InsurancePlanFields({
       </div>
 
       <div className="form-field">
-        <label htmlFor={id('payerId')}>Payer ID</label>
-        <input
-          id={id('payerId')}
-          type="text"
-          value={form.payer_id}
-          onChange={(e) => onChange('payer_id', e.target.value)}
-          disabled={disabled}
-        />
+        <label htmlFor={id('payerId')}>Payer</label>
+        {payersError ? (
+          // Directory unreachable: fall back to typing the id so a payer fix is
+          // never blocked by reference data being down.
+          <>
+            <input
+              id={id('payerId')}
+              type="text"
+              value={form.payer_id}
+              onChange={(e) => onChange('payer_id', e.target.value)}
+              disabled={disabled}
+              placeholder="Payer ID"
+            />
+            <p className="form-hint">{payersError} Enter the payer ID directly.</p>
+          </>
+        ) : (
+          <>
+            <select
+              id={id('payerId')}
+              value={form.payer_id}
+              onChange={(e) => onChange('payer_id', e.target.value)}
+              disabled={disabled || payersLoading}
+            >
+              <option value="">{payersLoading ? 'Loading payers...' : 'Not specified'}</option>
+              {payerChoices.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <p className="form-hint">Listed as payer name - payer ID.</p>
+          </>
+        )}
       </div>
 
       {creating ? (

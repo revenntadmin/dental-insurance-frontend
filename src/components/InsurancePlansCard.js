@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import InsurancePlanRow from './InsurancePlanRow';
 import NewInsurancePlanForm from './NewInsurancePlanForm';
+import { usePayers } from '../hooks/usePayers';
 import { availableOrders } from '../lib/insurancePlans';
 
 /** All of a patient's coverage in one card, one editable row per plan. */
@@ -13,6 +14,8 @@ export default function InsurancePlansCard({
 }) {
   const [adding, setAdding] = useState(false);
   const openOrders = availableOrders(plans);
+  // Fetched once here and handed down: every row's payer picker reads the same directory.
+  const { payers, loading: payersLoading, error: payersError } = usePayers();
 
   function handleCreated(plan) {
     // Close first: the plan is already saved, so a throw upstream must not
@@ -41,6 +44,9 @@ export default function InsurancePlansCard({
           key={plan.id}
           plan={plan}
           plans={plans}
+          payers={payers}
+          payersLoading={payersLoading}
+          payersError={payersError}
           onSaved={onPlanSaved}
           onDeleted={onPlanDeleted}
         />
@@ -50,6 +56,9 @@ export default function InsurancePlansCard({
         <NewInsurancePlanForm
           patientId={patientId}
           orderOptions={openOrders}
+          payers={payers}
+          payersLoading={payersLoading}
+          payersError={payersError}
           onCreated={handleCreated}
           onCancel={() => setAdding(false)}
         />
