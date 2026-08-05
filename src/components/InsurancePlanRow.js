@@ -5,6 +5,8 @@ import InsurancePlanDetails from './InsurancePlanDetails';
 import InsurancePlanFields from './InsurancePlanFields';
 import { changedFields, toFormValues } from '../lib/forms';
 import { PLAN_FIELDS, availableOrders, formatCoordinationOrder } from '../lib/insurancePlans';
+import { shouldPromptReentry } from '../lib/eligibility';
+import EligibilityStatus from './EligibilityStatus';
 
 /** One saved plan inside the shared insurance card, editable on its own. */
 export default function InsurancePlanRow({
@@ -17,6 +19,7 @@ export default function InsurancePlanRow({
   onDeleted,
 }) {
   const [form, setForm] = useState(() => toFormValues(plan, PLAN_FIELDS));
+  const [eligibilityNotice, setEligibilityNotice] = useState('');
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -31,6 +34,11 @@ export default function InsurancePlanRow({
     const { data } = await apiClient.patch(`/api/insurance_plan/${plan.id}`, patch);
     setForm(toFormValues(data, PLAN_FIELDS));
     onSaved(data);
+    if (shouldPromptReentry(data.eligibility)) {
+      setEligibilityNotice('Coverage is inactive. Update the insurance details and save again.');
+      return 'Plan saved, but coverage is inactive.';
+    }
+    setEligibilityNotice('');
     return 'Insurance plan updated.';
   }
 
@@ -57,12 +65,18 @@ export default function InsurancePlanRow({
       deleteLabel="Delete plan"
       deleteConfirmMessage="Remove this coverage from the patient?"
       onSave={handleSave}
-      onCancel={() => setForm(toFormValues(plan, PLAN_FIELDS))}
+      onCancel={() => {
+        setForm(toFormValues(plan, PLAN_FIELDS));
+        setEligibilityNotice('');
+      }}
       onDelete={handleDelete}
     >
       {({ editing }) =>
         editing ? (
-          <InsurancePlanFields
+          <>
+            {plan.eligibility && <EligibilityStatus eligibility={plan.eligibility} compact />}
+            {eligibilityNotice && <p className="form-error">{eligibilityNotice}</p>}
+            <InsurancePlanFields
             form={form}
             onChange={updateField}
             idPrefix={`plan-${plan.id}`}
@@ -73,6 +87,7 @@ export default function InsurancePlanRow({
             payersLoading={payersLoading}
             payersError={payersError}
           />
+          </>
         ) : (
           <InsurancePlanDetails plan={plan} />
         )

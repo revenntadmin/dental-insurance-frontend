@@ -706,6 +706,54 @@ button:disabled {
   margin-top: var(--space-sm);
 }
 
+.plan-details__note {
+  margin-top: var(--space-sm);
+}
+
+.eligibility-status {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.eligibility-status--compact {
+  margin-bottom: var(--space-sm);
+}
+
+.eligibility-status__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.eligibility-status__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.eligibility-status__summary {
+  margin: 0 0 var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.eligibility-status__details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.eligibility-status__warning {
+  margin: var(--space-sm) 0 0;
+}
+
 .section-card__message {
   margin-top: var(--space-md);
 }

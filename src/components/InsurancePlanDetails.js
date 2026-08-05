@@ -1,5 +1,6 @@
 import { formatDate } from '../lib/forms';
 import { formatRelationship } from '../lib/insurancePlans';
+import EligibilityStatus from './EligibilityStatus';
 
 function Detail({ label, value, wide = false, mono = false }) {
   return (
@@ -18,6 +19,8 @@ export default function InsurancePlanDetails({ plan }) {
 
   return (
     <>
+      {plan.eligibility && <EligibilityStatus eligibility={plan.eligibility} compact />}
+
       <div className="plan-details">
         <Detail label="Member ID" value={plan.member_id} wide mono />
         <Detail label="Payer ID" value={plan.payer_id} />
@@ -27,6 +30,7 @@ export default function InsurancePlanDetails({ plan }) {
         <Detail label="Relationship" value={formatRelationship(plan.subscriber_relationship)} />
         <Detail label="Subscriber DOB" value={formatDate(plan.subscriber_dob)} />
         <Detail label="Effective" value={formatDate(plan.effective_date)} />
+        <Detail label="Coverage" value={plan.coverage_status || '—'} />
       </div>
 
       {showReported && (
