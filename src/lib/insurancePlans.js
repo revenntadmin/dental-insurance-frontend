@@ -6,9 +6,18 @@ export const PLAN_FIELDS = [
   'member_id',
   'group_number',
   'effective_date',
-  'subscriber_name',
+  'subscriber_first_name',
+  'subscriber_middle_name',
+  'subscriber_last_name',
   'subscriber_dob',
   'subscriber_relationship',
+];
+
+/** The name parts the API stores separately but every read site shows as one string. */
+export const SUBSCRIBER_NAME_FIELDS = [
+  'subscriber_first_name',
+  'subscriber_middle_name',
+  'subscriber_last_name',
 ];
 
 /**
@@ -34,6 +43,21 @@ export function formatCoordinationOrder(order) {
 
 export function formatRelationship(relationship) {
   return titleCase(relationship);
+}
+
+/** The subscriber's name as one line; missing parts (usually middle) drop out. */
+export function subscriberName(plan) {
+  return SUBSCRIBER_NAME_FIELDS.map((field) => plan?.[field]).filter(Boolean).join(' ');
+}
+
+/**
+ * PATCH bodies carry null, not '', for fields the user cleared. The API trims and
+ * nulls empty strings anyway, but null says what the request actually means.
+ */
+export function nullBlanks(patch) {
+  return Object.fromEntries(
+    Object.entries(patch).map(([field, value]) => [field, value === '' ? null : value]),
+  );
 }
 
 export function planTitle(plan) {

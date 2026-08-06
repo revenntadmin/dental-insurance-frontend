@@ -290,6 +290,19 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* Inputs swapped in for cell text while a row is being edited. */
+.data-table__edit-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-xs) var(--space-sm);
+  font-size: 0.95rem;
+}
+
+/* Errors and confirmations belong to the row above, so they lose its bottom rule. */
+.data-table__row-message td {
+  padding-top: 0;
+}
+
 .data-table__actions {
   text-align: right;
   width: 1%;
@@ -316,11 +329,22 @@ button:disabled {
   background: var(--color-bg);
 }
 
+/*
+ * Exactly one viewport tall and pinned there: `align-self` stops the flex row from
+ * stretching it to match a long page, and sticky keeps it in view while the content
+ * beside it scrolls. Without both, the account menu at its foot sits wherever the
+ * page happens to end.
+ */
 .practice-shell__sidebar {
   width: 240px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  height: 100dvh;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
 }
@@ -328,6 +352,7 @@ button:disabled {
 .practice-shell__brand {
   padding: var(--space-lg) var(--space-md);
   border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .practice-shell__brand-name {
@@ -343,12 +368,15 @@ button:disabled {
   color: var(--color-text-muted);
 }
 
+/* The links are what gives when the sidebar runs out of room; brand and account stay put. */
 .practice-shell__nav {
   display: flex;
   flex-direction: column;
   padding: var(--space-md);
   gap: var(--space-xs);
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .practice-shell__nav-link {
@@ -382,6 +410,7 @@ button:disabled {
   margin-top: auto;
   padding: var(--space-md);
   border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .practice-shell__account-btn {
@@ -521,6 +550,10 @@ button:disabled {
   max-width: 820px;
 }
 
+.form-grid--full {
+  max-width: none;
+}
+
 /* Headings, hints, dividers, messages and the submit button span the full width. */
 .form-grid > * {
   grid-column: 1 / -1;
@@ -536,6 +569,23 @@ button:disabled {
 
 .form-grid > button {
   justify-self: start;
+}
+
+/*
+ * First / middle / last across one full-width row. Middle is optional and rarely
+ * filled, so it gets the narrow column.
+ */
+.name-group {
+  display: grid;
+  grid-template-columns: 1fr 0.5fr 1fr;
+  gap: var(--space-sm) var(--space-lg);
+  align-items: start;
+}
+
+@media (max-width: 640px) {
+  .name-group {
+    grid-template-columns: 1fr;
+  }
 }
 
 .form-field {
@@ -563,6 +613,11 @@ button:disabled {
   padding: var(--space-lg);
   margin-bottom: var(--space-lg);
   max-width: 820px;
+}
+
+/* For cards holding a table, which needs the full page width to stay readable. */
+.section-card--full {
+  max-width: none;
 }
 
 .section-card__header {
@@ -880,4 +935,622 @@ button:disabled {
   padding: var(--space-xl);
   color: var(--color-text-muted);
   text-align: center;
+}
+
+/* A day grid needs more room than a record page; 960px starts dropping columns. */
+.page--wide {
+  max-width: 1240px;
+}
+
+/*
+ * Verification colour lives on the modifier as variables so the badge and the summary
+ * tile that filters by it read as the same thing without duplicating the palette.
+ */
+.verify-badge--alarm {
+  --verify-bg: #fbeae8;
+  --verify-fg: #98211a;
+  --verify-line: #eec4c0;
+}
+
+.verify-badge--warn {
+  --verify-bg: #fdf3e2;
+  --verify-fg: #8a5a10;
+  --verify-line: #ecd7ae;
+}
+
+.verify-badge--ok {
+  --verify-bg: #e4f0e8;
+  --verify-fg: #1e6b3a;
+  --verify-line: #c4dfce;
+}
+
+.verify-badge--muted {
+  --verify-bg: var(--color-bg);
+  --verify-fg: var(--color-text-muted);
+  --verify-line: var(--color-border);
+}
+
+.verify-badge {
+  display: inline-block;
+  padding: 2px var(--space-sm);
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  background: var(--verify-bg);
+  color: var(--verify-fg);
+  box-shadow: inset 0 0 0 1px var(--verify-line);
+}
+
+.verify-badge--small {
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+
+/* no_plan and error carry a solid edge — they are the two a retry cannot clear. */
+.verify-badge--attention {
+  box-shadow: inset 0 0 0 1.5px var(--verify-fg);
+}
+
+/* Summary strip */
+.appt-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.appt-summary__total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-right: var(--space-lg);
+  border-right: 1px solid var(--color-border);
+}
+
+.appt-summary__total-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.appt-summary__total-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.appt-summary__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+/* Each tile is also the filter for its own state — the count is why you'd click it. */
+.appt-summary__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius);
+  background: var(--verify-bg);
+  color: var(--verify-fg);
+  box-shadow: inset 0 0 0 1px var(--verify-line);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.appt-summary__tile:hover {
+  background: var(--verify-bg);
+  box-shadow: inset 0 0 0 1px var(--verify-fg);
+}
+
+.appt-summary__tile--on {
+  box-shadow: inset 0 0 0 2px var(--verify-fg);
+}
+
+.appt-summary__tile--empty {
+  opacity: 0.55;
+}
+
+.appt-summary__count {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.appt-summary__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Filter bar */
+.appt-filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  margin-bottom: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.appt-filters__row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.appt-filters__row--statuses {
+  align-items: center;
+  gap: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.appt-filters__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.appt-filters__field input,
+.appt-filters__field select {
+  font-size: 0.9rem;
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-surface);
+}
+
+.appt-filters__field--grow {
+  flex: 1;
+  min-width: 220px;
+}
+
+.appt-filters__field--narrow {
+  width: 110px;
+}
+
+.appt-filters__presets {
+  display: flex;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+.appt-filters__legend {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-right: var(--space-xs);
+}
+
+.appt-filters__clear {
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.appt-filters__clear:hover {
+  background: var(--color-bg);
+}
+
+/* Toggle pill — on and off have to be distinguishable without reading the label. */
+.chip {
+  padding: var(--space-xs) var(--space-md);
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.chip--on {
+  background: #e8eef7;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.chip--on:hover {
+  background: #dde6f3;
+  color: var(--color-primary);
+}
+
+/* Batch selection */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  margin-bottom: var(--space-md);
+  background: #e8eef7;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius);
+}
+
+.selection-bar__count {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-primary-hover);
+}
+
+.selection-bar__note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.selection-bar button {
+  font-size: 0.9rem;
+  padding: var(--space-xs) var(--space-md);
+}
+
+/* Grid */
+.appt-table {
+  table-layout: auto;
+}
+
+.appt-row__select {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.appt-row__select input[type='checkbox'] {
+  padding: 0;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.appt-row__time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.appt-row__patient,
+.appt-row__type {
+  display: block;
+}
+
+.appt-row__patient {
+  font-weight: 500;
+}
+
+/* Second lines — DOB, appointment status, why a badge is shouting. */
+.appt-row__meta {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+/* Day heading row. A front desk works one day at a time. */
+.appt-day td {
+  background: var(--color-bg);
+  padding-top: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+
+.appt-day__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.appt-day__date {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.appt-day__count {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.appt-day__attention {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #98211a;
+}
+
+.appt-day__select {
+  order: 2;
+  margin-left: auto;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  padding: 2px var(--space-sm);
+}
+
+.appt-day__select:hover {
+  background: var(--color-surface);
+}
+
+.appt-more {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-md);
+}
+
+/* Per-plan verify results */
+.verify-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.verify-results__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.verify-results__title {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.verify-results__failed {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.verify-results__dismiss {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  padding: 2px var(--space-sm);
+}
+
+.verify-results__dismiss:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/*
+ * One block per plan. Primary and secondary get separate verdicts because that is
+ * what the payer gave — the secondary is exactly the one a merged view would lose.
+ */
+.verify-result {
+  padding: var(--space-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius);
+}
+
+.verify-result--error {
+  border-left-color: var(--color-danger);
+  background: #fdf7f6;
+}
+
+.verify-result__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.verify-result__payer {
+  font-weight: 600;
+}
+
+.verify-result__benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm) var(--space-lg);
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.verify-result__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+/* Patient picker */
+.patient-picker__results {
+  margin-top: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.patient-picker__option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.patient-picker__option:last-child {
+  border-bottom: none;
+}
+
+.patient-picker__option:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.patient-picker__option-name {
+  font-weight: 500;
+}
+
+.patient-picker__option-meta,
+.patient-picker__note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.patient-picker__note {
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.patient-picker__chosen {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.patient-picker__chosen-name {
+  font-weight: 600;
+}
+
+.patient-picker__chosen-meta {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.patient-picker__chosen button {
+  margin-left: auto;
+  font-size: 0.85rem;
+  padding: var(--space-xs) var(--space-sm);
+}
+
+/* Detail drawer — over the grid, because the reader is working a list. */
+.drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+}
+
+.drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 34, 51, 0.35);
+}
+
+.drawer__panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-border);
+  box-shadow: -8px 0 24px rgba(26, 34, 51, 0.15);
+}
+
+.drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.drawer__title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.drawer__subtitle {
+  margin: var(--space-xs) 0 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.drawer__close {
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  padding: 0 var(--space-sm);
+}
+
+.drawer__close:hover {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.drawer__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-lg);
+}
+
+.drawer__plan + .drawer__plan {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.drawer__plan .plan-heading {
+  margin-bottom: var(--space-sm);
+}
+
+/* One fieldset disables the whole visit form; it also has to shed its own chrome. */
+.drawer__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+/* Read-only facts, denser than a form and never mistakable for one. */
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fact__label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.fact__value {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
 }

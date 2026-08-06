@@ -1,5 +1,5 @@
 import { formatDate } from '../lib/forms';
-import { formatRelationship } from '../lib/insurancePlans';
+import { formatRelationship, subscriberName } from '../lib/insurancePlans';
 import EligibilityStatus from './EligibilityStatus';
 
 function Detail({ label, value, wide = false, mono = false }) {
@@ -26,7 +26,7 @@ export default function InsurancePlanDetails({ plan }) {
         <Detail label="Payer ID" value={plan.payer_id} />
         <Detail label="Group" value={plan.group_number} />
         <Detail label="Plan type" value={plan.plan_type} />
-        <Detail label="Subscriber" value={plan.subscriber_name} />
+        <Detail label="Subscriber" value={subscriberName(plan)} />
         <Detail label="Relationship" value={formatRelationship(plan.subscriber_relationship)} />
         <Detail label="Subscriber DOB" value={formatDate(plan.subscriber_dob)} />
         <Detail label="Effective" value={formatDate(plan.effective_date)} />

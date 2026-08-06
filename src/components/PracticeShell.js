@@ -67,6 +67,14 @@ export default function PracticeShell({ children }) {
           >
             Patients
           </NavLink>
+          <NavLink
+            to={`${base}/appointments`}
+            className={({ isActive }) =>
+              `practice-shell__nav-link${isActive ? ' practice-shell__nav-link--active' : ''}`
+            }
+          >
+            Appointments
+          </NavLink>
         </nav>
 
         <div className="practice-shell__account" ref={menuRef}>
@@ -107,7 +115,7 @@ export default function PracticeShell({ children }) {
                 role="menuitem"
                 onClick={closeMenu}
               >
-                Account Settings
+                Practice Settings
               </NavLink>
               <button
                 type="button"

@@ -4,7 +4,12 @@ import EditableSection from './EditableSection';
 import InsurancePlanDetails from './InsurancePlanDetails';
 import InsurancePlanFields from './InsurancePlanFields';
 import { changedFields, toFormValues } from '../lib/forms';
-import { PLAN_FIELDS, availableOrders, formatCoordinationOrder } from '../lib/insurancePlans';
+import {
+  PLAN_FIELDS,
+  availableOrders,
+  formatCoordinationOrder,
+  nullBlanks,
+} from '../lib/insurancePlans';
 import { shouldPromptReentry } from '../lib/eligibility';
 import EligibilityStatus from './EligibilityStatus';
 
@@ -31,7 +36,7 @@ export default function InsurancePlanRow({
       return 'No changes to save.';
     }
 
-    const { data } = await apiClient.patch(`/api/insurance_plan/${plan.id}`, patch);
+    const { data } = await apiClient.patch(`/api/insurance_plan/${plan.id}`, nullBlanks(patch));
     setForm(toFormValues(data, PLAN_FIELDS));
     onSaved(data);
     if (shouldPromptReentry(data.eligibility)) {

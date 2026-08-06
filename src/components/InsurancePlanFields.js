@@ -167,15 +167,40 @@ export default function InsurancePlanFields({
         </select>
       </div>
 
-      <div className="form-field">
-        <label htmlFor={id('subscriberName')}>Subscriber name</label>
-        <input
-          id={id('subscriberName')}
-          type="text"
-          value={form.subscriber_name}
-          onChange={(e) => onChange('subscriber_name', e.target.value)}
-          disabled={disabled}
-        />
+      <div className="name-group">
+        <div className="form-field">
+          <label htmlFor={id('subscriberFirstName')}>Subscriber first name</label>
+          <input
+            id={id('subscriberFirstName')}
+            type="text"
+            value={form.subscriber_first_name}
+            onChange={(e) => onChange('subscriber_first_name', e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+
+        <div className="form-field">
+          <label htmlFor={id('subscriberMiddleName')}>Middle</label>
+          <input
+            id={id('subscriberMiddleName')}
+            type="text"
+            value={form.subscriber_middle_name}
+            onChange={(e) => onChange('subscriber_middle_name', e.target.value)}
+            disabled={disabled}
+          />
+          <p className="form-hint">Optional</p>
+        </div>
+
+        <div className="form-field">
+          <label htmlFor={id('subscriberLastName')}>Subscriber last name</label>
+          <input
+            id={id('subscriberLastName')}
+            type="text"
+            value={form.subscriber_last_name}
+            onChange={(e) => onChange('subscriber_last_name', e.target.value)}
+            disabled={disabled}
+          />
+        </div>
       </div>
 
       <div className="form-field">
